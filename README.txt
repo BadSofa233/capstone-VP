@@ -1,3 +1,14 @@
 find ECE4415_course_files here: https://uwoca-my.sharepoint.com/:f:/g/personal/yli2993_uwo_ca/ElSc-dGPf9pCgA-FpPgctZYB6JPXkCEv7FV5MqswRF0Mqg?e=2t4QAJ
 
 find knowledge_base here: https://uwoca-my.sharepoint.com/:f:/g/personal/yli2993_uwo_ca/EslyNgdr4H5BpsFAxAY7kcUBFwVCQrflx-5KJXsTtFILpQ?e=2qERpF
+
+feel free to add anything to the folders!
+
+important readings in knowledge base:
+- courses/ECE3389: pipelining, cache, superscalar, branch prediction, parallelism, data dependency
+- books/Computer Architecture A Quantitative Approach (5th edition): Chapters 2&3, Appendix B, Appendix C
+- papers/shen_micro96
+- papers/A survey of value prediction techniques for leveraging value locality
+- papers/practical_VP
+- papers/JILP-COTTAGE
+- books/Digital Systems Design Using VHDL 3rd: sections 10.1-10.4
