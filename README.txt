@@ -2,6 +2,8 @@ find ECE4415_course_files here: https://uwoca-my.sharepoint.com/:f:/g/personal/y
 
 find knowledge_base here: https://uwoca-my.sharepoint.com/:f:/g/personal/yli2993_uwo_ca/EslyNgdr4H5BpsFAxAY7kcUBFwVCQrflx-5KJXsTtFILpQ?e=2qERpF
 
+find group meeting materials here: https://uwoca-my.sharepoint.com/:f:/g/personal/yli2993_uwo_ca/EhOYMrMn-v9FntHXC3_IRMgBWKIwww2rrZlVSZNjOwhntQ?e=lTJ4HM
+
 feel free to add anything to the folders!
 
 important readings in knowledge base:
