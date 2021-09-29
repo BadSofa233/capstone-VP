@@ -1,8 +1,8 @@
-find ECE4415_course_files here: https://uwoca-my.sharepoint.com/:f:/g/personal/yli2993_uwo_ca/ElSc-dGPf9pCgA-FpPgctZYB6JPXkCEv7FV5MqswRF0Mqg?e=2t4QAJ
-
-find knowledge_base here: https://uwoca-my.sharepoint.com/:f:/g/personal/yli2993_uwo_ca/EslyNgdr4H5BpsFAxAY7kcUBFwVCQrflx-5KJXsTtFILpQ?e=2qERpF
-
-find group meeting materials here: https://uwoca-my.sharepoint.com/:f:/g/personal/yli2993_uwo_ca/EhOYMrMn-v9FntHXC3_IRMgBWKIwww2rrZlVSZNjOwhntQ?e=x8N2LB
+Useful links:
+  ECE4415_course_files: https://uwoca-my.sharepoint.com/:f:/g/personal/yli2993_uwo_ca/ElSc-dGPf9pCgA-FpPgctZYB6JPXkCEv7FV5MqswRF0Mqg?e=2t4QAJ
+  knowledge_base: https://uwoca-my.sharepoint.com/:f:/g/personal/yli2993_uwo_ca/EslyNgdr4H5BpsFAxAY7kcUBFwVCQrflx-5KJXsTtFILpQ?e=2qERpF
+  group meeting materials: https://uwoca-my.sharepoint.com/:f:/g/personal/yli2993_uwo_ca/EhOYMrMn-v9FntHXC3_IRMgBWKIwww2rrZlVSZNjOwhntQ?e=x8N2LB
+  list of RISC-V implementations: https://github.com/riscvarchive/riscv-cores-list
 
 feel free to add anything to the folders!
 
