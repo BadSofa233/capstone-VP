@@ -103,18 +103,23 @@ module baseline_top #(
         // third, update confidence counter
         always @(posedge clk_i) begin
             if(mispredict[i]) begin // clear confidence_counter upon misprediction
+                // {P_CONF_THRES_WIDTH{1'b0}} means extend 1'b0 to P_CONF_THRES_WIDTH number of bits
                 confidence_counter[validate_index[i]] <= {P_CONF_THRES_WIDTH{1'b0}};
                 // you can also write "confidence_counter[validate_index] <= 0;" here but this is not the safest way
-            end else begin
-                confidence_counter[validate_index[i]] <= confidence_counter[validate_index[i]] + 1'b1; // 1'b1 means 1 bit (1') binary (b) number 1 (1),
-                                                                 // 32'hABCD means 32 bit hex number ABCD,
-                                                                 // 4'd13 means 4 bit decimal number 13
+            end
+            else if (fb_valid_i[i]) begin
+                confidence_counter[validate_index[i]] <= confidence_counter[validate_index[i]] + 1'b1; 
+                // 1'b1 means 1 bit (1') binary (b) number 1 (1),
+                // 32'hABCD means 32 bit hex number ABCD,
+                // 4'd13 means 4 bit decimal number 13
             end
         end
         
         // finally, store new "last value"
         always @(posedge clk_i) begin
-            last_value_storage[validate_index[i]] <= result_fb_i[i];
+            if(fb_valid_i[i]) begin
+                last_value_storage[validate_index[i]] <= result_fb_i[i];
+            end
         end
 
     end
