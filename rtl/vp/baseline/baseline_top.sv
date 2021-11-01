@@ -43,6 +43,14 @@ module baseline_top #(
     logic [P_STORAGE_SIZE-1:0][P_CONF_THRES_WIDTH-1:0]  confidence_counter;
     logic [P_STORAGE_SIZE-1:0]                          entry_valid;        // indicates if the entry is useful
 
+    // the 'initial' block of a Verilog file gets executed once at the start
+    // this is here just for debugging Verilator. 
+    // Delete or comment out this initial block for verification
+    initial begin
+        $display("Hello World");
+        $finish;
+    end
+
     // clear entry valid bits
     for(genvar i = 0; i < P_STORAGE_SIZE; i = i + 1) begin
         always @(posedge clk_i) begin
