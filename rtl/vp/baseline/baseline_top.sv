@@ -2,29 +2,51 @@
 // Author: Yuhan Li
 // Oct 30, 2021
 
+`default_nettype none
+
+`ifndef P_STORAGE_SIZE
+`define P_STORAGE_SIZE 2048
+`endif
+
+`ifndef P_CONF_THRES_WIDTH
+`define P_CONF_THRES_WIDTH 8
+`endif
+
+`ifndef P_NUM_PRED
+`define P_NUM_PRED 2
+`endif
+
 module baseline_top #(
     // input parameters that define widths of interfaces
     // parameters are like template parameters in C++ and 'generic' in VHDL
     // they generalize the block and allow flexible instantiation
     // if a parameter doesn't affect interface widths, use localparam after module declaration 
-    parameter   P_STORAGE_SIZE          = 2048, // max number of last values the predictor stores, 
-                                                // equals to max number of instructions the predictor can predict at a given time,
-                                                // default to 2048, cannot be greater than 2^P_INDEX_WIDTH
+    parameter   P_STORAGE_SIZE      = `P_STORAGE_SIZE,      // max number of last values the predictor stores, 
+                                                            // equals to max number of instructions the predictor can predict at a given time,
+                                                            // default to 2048, cannot be greater than 2^P_INDEX_WIDTH
 
-    parameter   P_CONF_THRES_WIDTH      = 8,    // produces a valid prediction when this bit is set in the confidence counter
-                                                // i.e. the predictor produces a valid prediction when the 
-                                                // estimated probability of error <= 1/(2^P_CONF_THRES_WIDTH)
-                                                // default to 8
+    parameter   P_CONF_THRES_WIDTH  = `P_CONF_THRES_WIDTH,  // produces a valid prediction when this bit is set in the confidence counter
+                                                            // i.e. the predictor produces a valid prediction when the 
+                                                            // estimated probability of error <= 1/(2^P_CONF_THRES_WIDTH)
+                                                            // default to 8
                                                 
-    parameter   P_NUM_PRED              = 2,    // max number of predictions that can be made every cycle
+    parameter   P_NUM_PRED          = `P_NUM_PRED,          // max number of predictions that can be made every cycle
 
     // localparams are like 'const' in C++. They cannot be modified elsewhere
-    localparam  P_INDEX_WIDTH           = $clog2(P_STORAGE_SIZE)  // number of LSBs of pc used to index the table
+    localparam  P_INDEX_WIDTH       = $clog2(P_STORAGE_SIZE)// number of LSBs of pc used to index the table
 ) (
     // define input and output signals here, use type 'logic'
     
     input   logic                                       clk_i,          // main clock
     input   logic                                       rst_i,          // active high reset
+    
+    // --------
+    // debug
+    // --------
+    output  logic [P_NUM_PRED-1:0] entry_valid_dbgo,
+    output  logic [P_NUM_PRED-1:0][31:0] entry_val_dbgo,
+    output  logic [P_NUM_PRED-1:0][P_CONF_THRES_WIDTH-1:0]  conf_dbgo,
+    // --------
     
     // prediction interface signals
     input   logic [P_NUM_PRED-1:0][31:0]                fw_pc_i,        // current instruction address
@@ -41,14 +63,11 @@ module baseline_top #(
     // declare signals and logic here
     logic [P_STORAGE_SIZE-1:0][31:0]                    last_value_storage; // memory for last values
     logic [P_STORAGE_SIZE-1:0][P_CONF_THRES_WIDTH-1:0]  confidence_counter;
-    logic [P_STORAGE_SIZE-1:0]                          entry_valid;        // indicates if the entry is useful
+    logic [P_STORAGE_SIZE-1:0]                          entry_valid/* verilator public */;        // indicates if the entry is useful
 
     // the 'initial' block of a Verilog file gets executed once at the start
-    // this is here just for debugging Verilator. 
-    // Delete or comment out this initial block for verification
     initial begin
-        $display("Hello World");
-        $finish;
+        $display("RTL INFO: P_STORAGE_SIZE set to %d, P_CONF_THRES_WIDTH set to %d, P_NUM_PRED set to %d", P_STORAGE_SIZE, P_CONF_THRES_WIDTH, P_NUM_PRED);
     end
 
     // clear entry valid bits
@@ -70,10 +89,10 @@ module baseline_top #(
             // --------------------------------------------------------------------------------
             // forward data path signals (gives predictions)
             // --------------------------------------------------------------------------------
-            logic [P_INDEX_WIDTH-1:0]           pred_index;         // hashed pc, used to index the last-value table
-            logic [31:0]                        fw_pc_d1;           // holds the last pc value to capture pc change 
-                                                                    // fw_pc_d1 stands for fw_pc_i delayed 1 cycle
-            logic [31:0]                        fw_pc_d2; 
+            logic [P_INDEX_WIDTH-1:0]           pred_index;         // truncated pc, used to index the last-value table
+            // logic [31:0]                        fw_pc_d1;           // holds the last pc value to capture pc change 
+                                                                       // // fw_pc_d1 stands for fw_pc_i delayed 1 cycle
+            // logic [31:0]                        fw_pc_d2; 
 
             // --------------------------------------------------------------------------------
             // feedback data path signals (updates predictor)
@@ -85,25 +104,26 @@ module baseline_top #(
             // latch PC
             // always (or always_ff) @(posedge clk_i) means that the logic in the block happens every rising edge of the signal clk_i
             // '<=' operator is nonblocking assignment, used in sequential blocks (always_ff and always blocks)
-            always_ff @(posedge clk_i) begin 
-                fw_pc_d1 <= fw_pc_i[i];
-                fw_pc_d2 <= fw_pc_d1;
-            end
+            // always_ff @(posedge clk_i) begin 
+                // fw_pc_d1 <= fw_pc_i[i];
+                // fw_pc_d2 <= fw_pc_d1;
+            // end
             
             // --------------------------------------------------------------------------------
             // forward data path logic (gives predictions)
             // --------------------------------------------------------------------------------
-            // first, hash pc to obtain the index
+            // first, truncate pc to obtain the index
             always @(posedge clk_i) begin
-                // this is just dummy logic
-                pred_index <= fw_pc_i[i][P_INDEX_WIDTH-1:0]; // TODO: implement hashing
+                pred_index <= fw_pc_i[i][P_INDEX_WIDTH-1:0];
             end
 
             // second, read storage to find the last value
             always @(posedge clk_i) begin
-                if(fw_pc_d2 != fw_pc_d1) begin
+                if(validate_index == pred_index && fb_valid_d1) begin
+                    pred_o[i] <= fb_result_d1;
+                end
+                else begin
                     pred_o[i] <= last_value_storage[pred_index];
-                    // TODO: add feedback data forwarding
                 end
             end
 
@@ -115,10 +135,9 @@ module baseline_top #(
             // --------------------------------------------------------------------------------
             // feedback data path logic (updates predictor)
             // --------------------------------------------------------------------------------
-            // first, hash pc to obtain the index, delay matching the rest of feedback path for 1 cycle
+            // first, truncate pc to obtain the index, delay matching the rest of feedback path for 1 cycle
             always @(posedge clk_i) begin
-                // this is just dummy logic here
-                validate_index <= fb_pc_i[i][P_INDEX_WIDTH-1:0]; // TODO: implement hashing
+                validate_index <= fb_pc_i[i][P_INDEX_WIDTH-1:0];
             end
             // delay matching the index hashing
             always @(posedge clk_i) begin
@@ -128,7 +147,7 @@ module baseline_top #(
 
             // second, detect misprediction, determine if the cpnfidence counter should be reset
             assign mispredict_o[i] = fb_valid_d1 && 
-                                     (last_value_storage[validate_index] == fb_result_d1) && 
+                                     (last_value_storage[validate_index] != fb_result_d1) && 
                                      &confidence_counter[pred_index] && 
                                      entry_valid[pred_index]; 
 
@@ -153,8 +172,22 @@ module baseline_top #(
                 end
             end
             
+            
+            // --------
+            // debug
+            // --------
+            assign entry_valid_dbgo[i] = entry_valid[validate_index];
+            assign entry_val_dbgo[i] = last_value_storage[validate_index];
+            assign conf_dbgo[i] = confidence_counter[validate_index];
+            // --------
         end
-
+        
     endgenerate
+    
+    // function get_entry_valid(logic [P_INDEX_WIDTH-1:0] pc);
+      // /* verilator public */
+      // get_entry_valid = entry_valid[pc];
+    // endfunction
+    
     
 endmodule

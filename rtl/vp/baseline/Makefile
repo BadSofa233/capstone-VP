@@ -1,19 +1,32 @@
+# this is the execution Makefile script for baseline_top
+# it compiles module baseline_top and simulates it in baseline_top.cpp
+# Author: Yuhan Li
+# Oct 31 2021
+
+VP_ROOT_DIR = ../../../
+
 MODULE ?= baseline_top
 
-RTL_FILES ?= $(MODULE).sv
-SIM_FILES ?= $(MODULE).cpp
+# RTL source files
+RTL_FILES = $(MODULE).sv
 
-VERILATOR_DIR = /usr/share/verilator
+# simulation source files
+SIM_FILES = $(MODULE).cpp
 
-all: $(RTL_FILES) $(SIM_FILES)
-	verilator -Wall --cc $(RTL_FILES) --exe V$(MODULE).cpp
-	-$(MAKE) -C obj_dir -j -f V$(MODULE).mk
-	g++ -I $(VERILATOR_DIR)/include -I obj_dir $(VERILATOR_DIR)/include/verilated.cpp $(MODULE).cpp obj_dir/V$(MODULE)__ALL.a -o obj_dir/$(MODULE)_sim
-	obj_dir/$(MODULE)_sim
+# define parameters for the block
+P_STORAGE_SIZE ?= 2048
+P_CONF_THRES_WIDTH ?= 8
+P_NUM_PRED ?= 2
 
-verilate:
-	verilator -Wall --cc $(RTL_FILES) --exe V$(MODULE).cpp
-	-$(MAKE) -C obj_dir -j -f V$(MODULE).mk
+# write parameter definitions to RTL
+VERILATOR_COMP_ARGS += +define+P_STORAGE_SIZE=$(P_STORAGE_SIZE) 
+VERILATOR_COMP_ARGS += +define+P_CONF_THRES_WIDTH=$(P_CONF_THRES_WIDTH) 
+VERILATOR_COMP_ARGS += +define+P_NUM_PRED=$(P_NUM_PRED)
 
-clean:
-	rm -rf obj_dir
+# write parameter definitions to sim runtime
+EXE_RUNTIME_ARGS += -P_STORAGE_SIZE $(P_STORAGE_SIZE)
+EXE_RUNTIME_ARGS += -P_CONF_THRES_WIDTH $(P_CONF_THRES_WIDTH)
+EXE_RUNTIME_ARGS += -P_NUM_PRED $(P_NUM_PRED)
+
+# include the common simulation script
+include $(VP_ROOT_DIR)script/sim.mk
