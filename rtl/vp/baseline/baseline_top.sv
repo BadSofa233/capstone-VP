@@ -26,102 +26,127 @@ module baseline_top #(
     input   logic                                       clk_i,          // main clock
     input   logic                                       rst_i,          // active high reset
     
-    // forward data path
-    input   logic [P_NUM_PRED-1:0][31:0]                pc_fw_i,        // current instruction address
+    // prediction interface signals
+    input   logic [P_NUM_PRED-1:0][31:0]                fw_pc_i,        // current instruction address
     output  logic [P_NUM_PRED-1:0][31:0]                pred_o,         // prediction result
     output  logic [P_NUM_PRED-1:0]                      pred_valid_o,   // qualifies the prediction result
 
-    // feedback data path
-    input   logic [P_NUM_PRED-1:0][31:0]                pc_fb_i,        // address of execution result feedback
-    input   logic [P_NUM_PRED-1:0][31:0]                result_fb_i,    // true execution result of the instruction
-    input   logic [P_NUM_PRED-1:0]                      fb_valid_i      // valid qualifier of feedback interface
+    // validation interface (feedback) signals
+    input   logic [P_NUM_PRED-1:0][31:0]                fb_pc_i,        // address of execution result feedback
+    input   logic [P_NUM_PRED-1:0][31:0]                fb_result_i,    // true execution result of the instruction
+    input   logic [P_NUM_PRED-1:0]                      fb_valid_i,     // valid qualifier of feedback interface
+    output  logic [P_NUM_PRED-1:0]                      mispredict_o    // indicates misprediction
 );
 
-    // declare signals
-
-    logic [P_NUM_PRED-1:0][31:0]                        pc_d1;              // holds the last pc value to capture pc change 
-                                                                            // pc_d1 stands for pc delayed 1 cycle
-    logic [P_NUM_PRED-1:0][31:0]                        pc_d2; 
-
-    // forward prediction path
-    logic [P_NUM_PRED-1:0][P_INDEX_WIDTH-1:0]           pred_index;         // hashed pc, used to index the last-value table
+    // declare signals and logic here
     logic [P_STORAGE_SIZE-1:0][31:0]                    last_value_storage; // memory for last values
     logic [P_STORAGE_SIZE-1:0][P_CONF_THRES_WIDTH-1:0]  confidence_counter;
+    logic [P_STORAGE_SIZE-1:0]                          entry_valid;        // indicates if the entry is useful
 
-    // feedback update path
-    logic [P_NUM_PRED-1:0][P_INDEX_WIDTH-1:0]           validate_index;     // hashed pc, used to index the last-value table
-    logic [P_NUM_PRED-1:0]                              mispredict;         // indecates misprediction
-
-    // define logic
-
-
-    // forward prediction path
-
-    // latch PC
-    // always (or always_ff) @(posedge clk_i) means that the logic in the block happens every rising edge of the signal clk_i
-    // '<=' operator is nonblocking assignment, used in sequential blocks (always_ff and always blocks)
-    always_ff @(posedge clk_i) begin 
-        pc_d1 <= pc_fw_i;
-        pc_d2 <= pc_d1;
+    // clear entry valid bits
+    for(genvar i = 0; i < P_STORAGE_SIZE; i = i + 1) begin
+        always @(posedge clk_i) begin
+            if(rst_i) begin
+                entry_valid[i] <= 1'b0; // 1'b0 means 1 bit (1') binary (b) number 0 (0),
+                                        // 32'hABCD means 32 bit hex number ABCD,
+                                        // 4'd13 means 4 bit decimal number 13
+            end
+        end
     end
 
-    for(genvar i = 0; i < P_NUM_PRED; i = i + 1) begin
+    // if the signals are specific to parameter, use 'generate' and 'endgenerate'
+    // in this case, there is one pred_index, fw_pc_*, validate_index ... for each P_NUM_PRED
+    // so you can use 'generate' and for loop to generate signals and logic
+    generate 
+        for(genvar i = 0; i < P_NUM_PRED; i = i + 1) begin
+            // --------------------------------------------------------------------------------
+            // forward data path signals (gives predictions)
+            // --------------------------------------------------------------------------------
+            logic [P_INDEX_WIDTH-1:0]           pred_index;         // hashed pc, used to index the last-value table
+            logic [31:0]                        fw_pc_d1;           // holds the last pc value to capture pc change 
+                                                                    // fw_pc_d1 stands for fw_pc_i delayed 1 cycle
+            logic [31:0]                        fw_pc_d2; 
 
-        // first, hash pc to obtain the index
-        always @(posedge clk_i) begin
-            // this is just dummy logic
-            pred_index[i] <= pc_fw_i[i][P_INDEX_WIDTH-1:0]; // TODO: implement hashing
-        end
-
-        // second, read storage to find the last value
-        always @(posedge clk_i) begin
-            if(pc_d2[i] != pc_d1[i]) begin
-                pred_o[i] <= last_value_storage[pred_index];
-                // TODO: add feedback data forwarding
+            // --------------------------------------------------------------------------------
+            // feedback data path signals (updates predictor)
+            // --------------------------------------------------------------------------------
+            logic [P_INDEX_WIDTH-1:0]           validate_index;     // hashed pc, used to index the last-value table
+            logic [31:0]                        fb_result_d1;       // delayed fb_result_i
+            logic                               fb_valid_d1;        // delayed fb_valid_i
+            
+            // latch PC
+            // always (or always_ff) @(posedge clk_i) means that the logic in the block happens every rising edge of the signal clk_i
+            // '<=' operator is nonblocking assignment, used in sequential blocks (always_ff and always blocks)
+            always_ff @(posedge clk_i) begin 
+                fw_pc_d1 <= fw_pc_i[i];
+                fw_pc_d2 <= fw_pc_d1;
             end
-        end
-
-        // finally, qualify prediction by confidence
-        always @(posedge clk_i) begin
-            pred_valid_o[i] <= &confidence_counter[pred_index];
-        end
-
-    end
-
-    // feedback update path
-    for(genvar i = 0; i < P_NUM_PRED; i = i + 1) begin
-
-        // first, hash pc to obtain the index
-        always @(posedge clk_i) begin
-            // this is just dummy logic here
-            validate_index[i] <= pc_fb_i[i][P_INDEX_WIDTH-1:0]; // TODO: implement hashing
-        end
-
-        // second, detect misprediction
-        assign mispredict[i] = fb_valid_i[i] && (last_value_storage[validate_index[i]] == result_fb_i[i]);
-
-        // third, update confidence counter
-        always @(posedge clk_i) begin
-            if(mispredict[i]) begin // clear confidence_counter upon misprediction
-                // {P_CONF_THRES_WIDTH{1'b0}} means extend 1'b0 to P_CONF_THRES_WIDTH number of bits
-                confidence_counter[validate_index[i]] <= {P_CONF_THRES_WIDTH{1'b0}};
-                // you can also write "confidence_counter[validate_index] <= 0;" here but this is not the safest way
+            
+            // --------------------------------------------------------------------------------
+            // forward data path logic (gives predictions)
+            // --------------------------------------------------------------------------------
+            // first, hash pc to obtain the index
+            always @(posedge clk_i) begin
+                // this is just dummy logic
+                pred_index <= fw_pc_i[i][P_INDEX_WIDTH-1:0]; // TODO: implement hashing
             end
-            else if (fb_valid_i[i]) begin
-                confidence_counter[validate_index[i]] <= confidence_counter[validate_index[i]] + 1'b1; 
-                // 1'b1 means 1 bit (1') binary (b) number 1 (1),
-                // 32'hABCD means 32 bit hex number ABCD,
-                // 4'd13 means 4 bit decimal number 13
+
+            // second, read storage to find the last value
+            always @(posedge clk_i) begin
+                if(fw_pc_d2 != fw_pc_d1) begin
+                    pred_o[i] <= last_value_storage[pred_index];
+                    // TODO: add feedback data forwarding
+                end
             end
-        end
-        
-        // finally, store new "last value"
-        always @(posedge clk_i) begin
-            if(fb_valid_i[i]) begin
-                last_value_storage[validate_index[i]] <= result_fb_i[i];
+
+            // finally, qualify prediction by confidence
+            always @(posedge clk_i) begin
+                pred_valid_o[i] <= &confidence_counter[pred_index] && entry_valid[pred_index]; 
             end
+
+            // --------------------------------------------------------------------------------
+            // feedback data path logic (updates predictor)
+            // --------------------------------------------------------------------------------
+            // first, hash pc to obtain the index, delay matching the rest of feedback path for 1 cycle
+            always @(posedge clk_i) begin
+                // this is just dummy logic here
+                validate_index <= fb_pc_i[i][P_INDEX_WIDTH-1:0]; // TODO: implement hashing
+            end
+            // delay matching the index hashing
+            always @(posedge clk_i) begin
+                fb_result_d1 <= fb_result_i[i];
+                fb_valid_d1 <= fb_valid_i[i];
+            end
+
+            // second, detect misprediction, determine if the cpnfidence counter should be reset
+            assign mispredict_o[i] = fb_valid_d1 && 
+                                     (last_value_storage[validate_index] == fb_result_d1) && 
+                                     &confidence_counter[pred_index] && 
+                                     entry_valid[pred_index]; 
+
+            // third, update confidence counter
+            always @(posedge clk_i) begin
+                if(mispredict_o[i] || !entry_valid[validate_index]) begin // clear confidence_counter upon misprediction
+                    // {P_CONF_THRES_WIDTH{1'b0}} means extend 1'b0 to P_CONF_THRES_WIDTH number of bits
+                    confidence_counter[validate_index] <= {P_CONF_THRES_WIDTH{1'b0}};
+                    // you can also write "confidence_counter[validate_index] <= 0;" here but this is not the safest way
+                end
+                else if (fb_valid_d1 && !(&confidence_counter[validate_index])) begin
+                    // increment (saturate) confidence counter upon correct prediction
+                    confidence_counter[validate_index] <= confidence_counter[validate_index] + 1'b1; 
+                end
+            end
+            
+            // finally, store new "last value"
+            always @(posedge clk_i) begin
+                if(fb_valid_d1) begin
+                    last_value_storage[validate_index] <= fb_result_d1;
+                    entry_valid[validate_index] <= 1'b1;
+                end
+            end
+            
         end
 
-    end
-
+    endgenerate
+    
 endmodule
