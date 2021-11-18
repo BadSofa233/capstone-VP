@@ -183,11 +183,6 @@ module baseline_top #(
         end
         
     endgenerate
-    
-    // function get_entry_valid(logic [P_INDEX_WIDTH-1:0] pc);
-      // /* verilator public */
-      // get_entry_valid = entry_valid[pc];
-    // endfunction
-    
+        
     
 endmodule
