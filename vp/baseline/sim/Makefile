@@ -6,6 +6,7 @@
 VP_ROOT_DIR = $(abspath ../../../)
 DESIGN_DIR = $(abspath ../)
 SRC_DIR = $(DESIGN_DIR)/src
+SIM_DIR = $(abspath ./)
 
 MODULE ?= baseline_top
 
@@ -31,6 +32,7 @@ VERILATOR_COMP_ARGS += +define+P_NUM_PRED=$(P_NUM_PRED)
 # enable trace
 ifeq ($(DUMP),1)
 	VERILATOR_COMP_ARGS += --trace
+	EXE_COMP_ARGS += -DDUT_DUMP_TRACE=1
 endif
 
 # write parameter definitions to sim runtime

@@ -11,7 +11,7 @@
 
 class Baseline_top_tb : public Vwrapper<Vbaseline_top> {
     public:
-        Baseline_top_tb() : Vwrapper((char *)"Baseline_top_tb") {
+        Baseline_top_tb() : Vwrapper((char *)"baseline_top_tb") {
 
         }
         

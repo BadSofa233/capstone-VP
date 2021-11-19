@@ -15,8 +15,8 @@ EXE = obj_dir/$(MODULE)_sim
 # default target, run verilator to compile RTL design, compile the C++ testbench, and execute the program
 all: $(RTL_FILES) $(SIM_FILES) verilate
 	dos2unix $(SCRIPT_DIR)/generate_testbench.sh
-	bash $(SCRIPT_DIR)/generate_testbench.sh $(DESIGN_DIR)/ $(MODULE)
-	g++ -I $(VERILATOR_DIR)/include -I $(VERILATOR_DIR)/include/vltstd -I $(SCRIPT_DIR) -I obj_dir $(VERILATOR_DIR)/include/verilated.cpp $(VERILATOR_DIR)/include/verilated_vcd_c.cpp $(MODULE).cpp obj_dir/V$(MODULE)__ALL.a -o $(EXE) $(EXE_COMP_ARGS)
+	bash $(SCRIPT_DIR)/generate_testbench.sh $(SIM_DIR)/ $(MODULE)
+	g++ -I $(VERILATOR_DIR)/include -I $(VERILATOR_DIR)/include/vltstd -I $(SCRIPT_DIR) -I obj_dir $(VERILATOR_DIR)/include/verilated.cpp $(VERILATOR_DIR)/include/verilated_vcd_c.cpp $(MODULE).cpp obj_dir/V$(MODULE)__ALL.a $(EXE_COMP_ARGS) -o $(EXE)
 	@printf "\nStarting sims...\n\n"
 	$(EXE) $(EXE_RUNTIME_ARGS)
 	@printf "\nSims complete.\n"

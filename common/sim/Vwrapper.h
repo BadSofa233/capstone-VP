@@ -12,6 +12,7 @@
 #include "verilated.h"
 #include "verilated_vcd_c.h"
 #include <string>
+#include <iostream>
 
 template<class Device>
 class Vwrapper {
@@ -29,6 +30,8 @@ class Vwrapper {
             Verilated::traceEverOn(true);
             dump_trace = DUT_DUMP_TRACE;
             if(dump_trace) {
+                std::cout << "Dump is turned on\n";
+                dut_trace = nullptr;
                 open_trace();
             }
             cycle = 0;
@@ -50,17 +53,26 @@ class Vwrapper {
         // toggle the clock twice
         virtual void tick() {
             cycle++;
-            eval();
+            eval(10*cycle-2, false);
             device->clk_i = 1;
-            eval();
+            eval(10*cycle, false);
             device->clk_i = 0;
-            eval();
+            eval(10*cycle+5, true);
         }
         
         // evaluate the block at current state
         virtual void eval() {
             device->eval();
-            // TODO: add dumps and flushes here
+        }
+        
+        virtual void eval(int timestamp, bool flush) {
+            device->eval();
+            if(dump_trace) {
+                dut_trace->dump(timestamp);
+                if(flush) {
+                    dut_trace->flush();
+                }
+            }
         }
         
         // start waveform tracing
@@ -68,7 +80,8 @@ class Vwrapper {
             if(dut_trace == nullptr) {
                 dut_trace = new VerilatedVcdC;
                 device->trace(dut_trace, 99);
-                dut_trace->open((device_name + ".trace").c_str());
+                dut_trace->open((device_name + "_trace.vcd").c_str());
+                std::cout << "trace opened\n";
             }
         }
         

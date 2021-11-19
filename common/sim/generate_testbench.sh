@@ -1,7 +1,7 @@
 #usr/bin/bash
 
-sig_in=$(grep input.*_i "$1"/"$2".sv|grep -Po [_a-z]*_i)
-sig_out=$(grep output.*_.*o "$1"/"$2".sv|grep -Po [_a-z]*_[a-z]*o)
+sig_in=$(grep input.*_i "$1"/../src/"$2".sv|grep -Po [_a-z]*_i)
+sig_out=$(grep output.*_.*o "$1"/../src/"$2".sv|grep -Po [_a-z]*_[a-z]*o)
 
 printf "\
 // this is the auto generated testbench header\n\
@@ -14,9 +14,9 @@ printf "\
 #include \"verilated.h\"\n
 #include <inttypes.h>
 
-class "${2^}"_tb : public Vwrapper<Vbaseline_top> {
+class "${2^}"_tb : public Vwrapper<V"$2"> {
     public:
-        "${2^}"_tb() : Vwrapper((char *)\""${2^}"_tb\") {
+        "${2^}"_tb() : Vwrapper((char *)\""$2"_tb\") {
 
         }
         
