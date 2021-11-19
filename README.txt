@@ -17,9 +17,10 @@ important readings in knowledge base:
 
 
 recommended dev environment:
-- Windows 10 + WSL 2 Ubuntu (Windows Subsystem Linux)
+- Windows 10/11 + WSL 2 Ubuntu: https://docs.microsoft.com/en-us/windows/wsl/install
 
 Windows 10 tools:
+- Windows Terminal: https://www.microsoft.com/en-ca/p/windows-terminal/9n0dx20hk701#activetab=pivot:overviewtab
 - Notepad++
 - Vivado
 - git (GitHub Desktop)
