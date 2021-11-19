@@ -14,3 +14,16 @@ important readings in knowledge base:
 - papers/practical_VP
 - papers/JILP-COTTAGE
 - books/Digital Systems Design Using VHDL 3rd: sections 10.1-10.4
+
+recommended dev environment and tools:
+- Windows 10 + WSL 2 Ubuntu
+- Windows 10 tools:
+	- Notepad++
+	- git (GitHub Desktop)
+	- Microsoft Visio
+	- GTKWave
+- Linux tools:
+	- gcc, g++
+	- gnu make
+	- verilator
+	- 
