@@ -2,3 +2,5 @@ knowledge_base/
 ECE4415_course_files/
 group_meetings/
 obj_dir/
+*.vcd
+*.hex

@@ -15,15 +15,19 @@ important readings in knowledge base:
 - papers/JILP-COTTAGE
 - books/Digital Systems Design Using VHDL 3rd: sections 10.1-10.4
 
-recommended dev environment and tools:
-- Windows 10 + WSL 2 Ubuntu
-- Windows 10 tools:
-	- Notepad++
-	- git (GitHub Desktop)
-	- Microsoft Visio
-	- GTKWave
-- Linux tools:
-	- gcc, g++
-	- gnu make
-	- verilator
-	- 
+
+recommended dev environment:
+- Windows 10 + WSL 2 Ubuntu (Windows Subsystem Linux)
+
+Windows 10 tools:
+- Notepad++
+- Vivado
+- git (GitHub Desktop)
+- Microsoft Visio
+- GTKWave: http://gtkwave.sourceforge.net/
+
+WSL Ubuntu tools:
+- gcc, g++
+- gnu make
+- verilator: sudo apt-get install verilator
+- RISC-V GNU toolchain: https://github.com/riscv-collab/riscv-gnu-toolchain
