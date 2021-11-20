@@ -48,16 +48,21 @@ module baseline_top #(
     output  logic [P_NUM_PRED-1:0][P_CONF_THRES_WIDTH-1:0]  conf_dbgo,
     // --------
     
-    // prediction interface signals
-    input   logic [P_NUM_PRED-1:0][31:0]                fw_pc_i,        // current instruction address
-    output  logic [P_NUM_PRED-1:0][31:0]                pred_o,         // prediction result
-    output  logic [P_NUM_PRED-1:0]                      pred_valid_o,   // qualifies the prediction result
+    // forward input interface signals
+    input   logic [P_NUM_PRED-1:0][31:0]                    fw_pc_i,        // current instruction address
+    input   logic [P_NUM_PRED-1:0][31:0]                    fw_valid_i,     // current instruction address valid qualifier
+    // forward prediction interface signals
+    output  logic [P_NUM_PRED-1:0][31:0]                    pred_pc_o,      // forward input pc delay matched, used for update
+    output  logic [P_NUM_PRED-1:0][31:0]                    pred_result_o,  // prediction result
+    output  logic [P_NUM_PRED-1:0][P_CONF_THRES_WIDTH-1:0]  pred_conf_o,    // prediction result's confidence, used for update
+    output  logic [P_NUM_PRED-1:0]                          pred_valid_o,   // qualifies the prediction result
 
     // validation interface (feedback) signals
-    input   logic [P_NUM_PRED-1:0][31:0]                fb_pc_i,        // address of execution result feedback
-    input   logic [P_NUM_PRED-1:0][31:0]                fb_result_i,    // true execution result of the instruction
-    input   logic [P_NUM_PRED-1:0]                      fb_valid_i,     // valid qualifier of feedback interface
-    output  logic [P_NUM_PRED-1:0]                      mispredict_o    // indicates misprediction
+    input   logic [P_NUM_PRED-1:0][31:0]                    fb_pc_i,        // address of execution result feedback
+    input   logic [P_NUM_PRED-1:0][31:0]                    fb_actual_i,    // true execution result of the instruction
+    input   logic [P_NUM_PRED-1:0]                          fb_mispredict_i,// indicates misprediction
+    input   logic [P_NUM_PRED-1:0][P_CONF_THRES_WIDTH-1:0]  fb_conf_i,// indicates misprediction
+    input   logic [P_NUM_PRED-1:0]                          fb_valid_i      // valid qualifier of feedback interface
 );
 
     // declare signals and logic here
@@ -98,7 +103,7 @@ module baseline_top #(
             // feedback data path signals (updates predictor)
             // --------------------------------------------------------------------------------
             logic [P_INDEX_WIDTH-1:0]           validate_index;     // hashed pc, used to index the last-value table
-            logic [31:0]                        fb_result_d1;       // delayed fb_result_i
+            logic [31:0]                        fb_result_d1;       // delayed fb_actual_i
             logic                               fb_valid_d1;        // delayed fb_valid_i
             
             // latch PC
@@ -120,10 +125,10 @@ module baseline_top #(
             // second, read storage to find the last value
             always @(posedge clk_i) begin
                 if(validate_index == pred_index && fb_valid_d1) begin
-                    pred_o[i] <= fb_result_d1;
+                    pred_result_o[i] <= fb_result_d1;
                 end
                 else begin
-                    pred_o[i] <= last_value_storage[pred_index];
+                    pred_result_o[i] <= last_value_storage[pred_index];
                 end
             end
 
@@ -141,7 +146,7 @@ module baseline_top #(
             end
             // delay matching the index hashing
             always @(posedge clk_i) begin
-                fb_result_d1 <= fb_result_i[i];
+                fb_result_d1 <= fb_actual_i[i];
                 fb_valid_d1 <= fb_valid_i[i];
             end
 
