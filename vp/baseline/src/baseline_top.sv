@@ -150,7 +150,7 @@ module baseline_top #(
                 fb_valid_d1 <= fb_valid_i[i];
             end
 
-            // second, detect misprediction, determine if the cpnfidence counter should be reset
+            // second, detect misprediction, determine if the confidence counter should be reset
             assign mispredict_o[i] = fb_valid_d1 && 
                                      (last_value_storage[validate_index] != fb_result_d1) && 
                                      &confidence_counter[pred_index] && 
