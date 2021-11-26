@@ -22,13 +22,13 @@ module baseline_top #(
     // they generalize the block and allow flexible instantiation
     // if a parameter doesn't affect interface widths, use localparam after module declaration 
     parameter   P_STORAGE_SIZE  = `P_STORAGE_SIZE,      // max number of last values the predictor stores, 
-                                                            // equals to max number of instructions the predictor can predict at a given time,
-                                                            // default to 2048, cannot be greater than 2^P_INDEX_WIDTH
+                                                        // equals to max number of instructions the predictor can predict at a given time,
+                                                        // default to 2048, cannot be greater than 2^P_INDEX_WIDTH
 
-    parameter   P_CONF_WIDTH    = `P_CONF_WIDTH,  // produces a valid prediction when this bit is set in the confidence counter
-                                                            // i.e. the predictor produces a valid prediction when the 
-                                                            // estimated probability of error <= 1/(2^P_CONF_WIDTH)
-                                                            // default to 8
+    parameter   P_CONF_WIDTH    = `P_CONF_WIDTH,        // produces a valid prediction when this bit is set in the confidence counter
+                                                        // i.e. the predictor produces a valid prediction when the 
+                                                        // estimated probability of error <= 1/(2^P_CONF_WIDTH)
+                                                        // default to 8
                                                 
     parameter   P_NUM_PRED      = `P_NUM_PRED,          // max number of predictions that can be made every cycle
 
