@@ -11,14 +11,14 @@ SIM_DIR = $(abspath ./)
 MODULE ?= baseline_top
 
 # RTL source files
-RTL_FILES = $(SRC_DIR)/$(MODULE).sv
+RTL_FILES = $(MODULE).sv
 
-# simulation source files
-SIM_FILES = $(MODULE).cpp $(VP_ROOT_DIR)/common/sim/Vwrapper.h $(MODULE)_tb.h
+# simulation source files, TODO: add cmodel files
+SIM_FILES = $(MODULE).cpp $(MODULE)_cmodel.h
 
 # define parameters for the block
 P_STORAGE_SIZE ?= 2048
-P_CONF_THRES_WIDTH ?= 8
+P_CONF_WIDTH ?= 8
 P_NUM_PRED ?= 2
 
 # trace dumping
@@ -26,7 +26,7 @@ DUMP ?= 0
 
 # write parameter definitions to RTL
 VERILATOR_COMP_ARGS += +define+P_STORAGE_SIZE=$(P_STORAGE_SIZE) 
-VERILATOR_COMP_ARGS += +define+P_CONF_THRES_WIDTH=$(P_CONF_THRES_WIDTH) 
+VERILATOR_COMP_ARGS += +define+P_CONF_WIDTH=$(P_CONF_WIDTH) 
 VERILATOR_COMP_ARGS += +define+P_NUM_PRED=$(P_NUM_PRED)
 
 # enable trace
@@ -37,7 +37,7 @@ endif
 
 # write parameter definitions to sim runtime
 EXE_RUNTIME_ARGS += -P_STORAGE_SIZE $(P_STORAGE_SIZE)
-EXE_RUNTIME_ARGS += -P_CONF_THRES_WIDTH $(P_CONF_THRES_WIDTH)
+EXE_RUNTIME_ARGS += -P_CONF_WIDTH $(P_CONF_WIDTH)
 EXE_RUNTIME_ARGS += -P_NUM_PRED $(P_NUM_PRED)
 
 # include the common simulation script
