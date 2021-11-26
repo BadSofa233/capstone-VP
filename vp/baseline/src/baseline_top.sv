@@ -8,8 +8,8 @@
 `define P_STORAGE_SIZE 2048
 `endif
 
-`ifndef P_CONF_THRES_WIDTH
-`define P_CONF_THRES_WIDTH 8
+`ifndef P_CONF_WIDTH
+`define P_CONF_WIDTH 8
 `endif
 
 `ifndef P_NUM_PRED
@@ -21,19 +21,19 @@ module baseline_top #(
     // parameters are like template parameters in C++ and 'generic' in VHDL
     // they generalize the block and allow flexible instantiation
     // if a parameter doesn't affect interface widths, use localparam after module declaration 
-    parameter   P_STORAGE_SIZE      = `P_STORAGE_SIZE,      // max number of last values the predictor stores, 
+    parameter   P_STORAGE_SIZE  = `P_STORAGE_SIZE,      // max number of last values the predictor stores, 
                                                             // equals to max number of instructions the predictor can predict at a given time,
                                                             // default to 2048, cannot be greater than 2^P_INDEX_WIDTH
 
-    parameter   P_CONF_THRES_WIDTH  = `P_CONF_THRES_WIDTH,  // produces a valid prediction when this bit is set in the confidence counter
+    parameter   P_CONF_WIDTH    = `P_CONF_WIDTH,  // produces a valid prediction when this bit is set in the confidence counter
                                                             // i.e. the predictor produces a valid prediction when the 
-                                                            // estimated probability of error <= 1/(2^P_CONF_THRES_WIDTH)
+                                                            // estimated probability of error <= 1/(2^P_CONF_WIDTH)
                                                             // default to 8
                                                 
-    parameter   P_NUM_PRED          = `P_NUM_PRED,          // max number of predictions that can be made every cycle
+    parameter   P_NUM_PRED      = `P_NUM_PRED,          // max number of predictions that can be made every cycle
 
     // localparams are like 'const' in C++. They cannot be modified elsewhere
-    localparam  P_INDEX_WIDTH       = $clog2(P_STORAGE_SIZE)// number of LSBs of pc used to index the table
+    localparam  P_INDEX_WIDTH   = $clog2(P_STORAGE_SIZE)// number of LSBs of pc used to index the table
 ) (
     // define input and output signals here, use type 'logic'
     
@@ -43,150 +43,118 @@ module baseline_top #(
     // --------
     // debug
     // --------
-    output  logic [P_NUM_PRED-1:0] entry_valid_dbgo,
-    output  logic [P_NUM_PRED-1:0][31:0] entry_val_dbgo,
-    output  logic [P_NUM_PRED-1:0][P_CONF_THRES_WIDTH-1:0]  conf_dbgo,
     // --------
     
     // forward input interface signals
     input   logic [P_NUM_PRED-1:0][31:0]                    fw_pc_i,        // current instruction address
-    input   logic [P_NUM_PRED-1:0][31:0]                    fw_valid_i,     // current instruction address valid qualifier
+    input   logic [P_NUM_PRED-1:0]                          fw_valid_i,     // current instruction address valid qualifier
     // forward prediction interface signals
     output  logic [P_NUM_PRED-1:0][31:0]                    pred_pc_o,      // forward input pc delay matched, used for update
     output  logic [P_NUM_PRED-1:0][31:0]                    pred_result_o,  // prediction result
-    output  logic [P_NUM_PRED-1:0][P_CONF_THRES_WIDTH-1:0]  pred_conf_o,    // prediction result's confidence, used for update
+    output  logic [P_NUM_PRED-1:0]                          pred_conf_o,    // prediction result's confidence, 1 if saturated, 0 else
     output  logic [P_NUM_PRED-1:0]                          pred_valid_o,   // qualifies the prediction result
 
     // validation interface (feedback) signals
     input   logic [P_NUM_PRED-1:0][31:0]                    fb_pc_i,        // address of execution result feedback
     input   logic [P_NUM_PRED-1:0][31:0]                    fb_actual_i,    // true execution result of the instruction
     input   logic [P_NUM_PRED-1:0]                          fb_mispredict_i,// indicates misprediction
-    input   logic [P_NUM_PRED-1:0][P_CONF_THRES_WIDTH-1:0]  fb_conf_i,// indicates misprediction
+    input   logic [P_NUM_PRED-1:0]                          fb_conf_i,      // indicates if the prediction confidence was saturated
     input   logic [P_NUM_PRED-1:0]                          fb_valid_i      // valid qualifier of feedback interface
 );
 
     // declare signals and logic here
-    logic [P_STORAGE_SIZE-1:0][31:0]                    last_value_storage; // memory for last values
-    logic [P_STORAGE_SIZE-1:0][P_CONF_THRES_WIDTH-1:0]  confidence_counter;
-    logic [P_STORAGE_SIZE-1:0]                          entry_valid/* verilator public */;        // indicates if the entry is useful
+    logic [P_STORAGE_SIZE-1:0][31:0]                        value_table; // memory for last values
+    logic [P_STORAGE_SIZE-1:0][P_CONF_WIDTH-1:0]            confidence_table;
+    
+    logic [P_NUM_PRED-1:0]                                  fb_wen;
+    logic [P_NUM_PRED-1:0]                                  fb_conf_incr;
+    logic                                                   fb_conf_add2;
+    logic [P_NUM_PRED-1:0]                                  fb_conf_reset;
+    
+    logic [P_NUM_PRED-1:0][P_CONF_WIDTH-1:0]                fb_old_conf;
+    logic [P_NUM_PRED-1:0][P_CONF_WIDTH-1:0]                fb_new_conf;
+    
 
     // the 'initial' block of a Verilog file gets executed once at the start
     initial begin
-        $display("RTL INFO: P_STORAGE_SIZE set to %d, P_CONF_THRES_WIDTH set to %d, P_NUM_PRED set to %d", P_STORAGE_SIZE, P_CONF_THRES_WIDTH, P_NUM_PRED);
+        $display("RTL INFO: P_STORAGE_SIZE set to %d, P_CONF_WIDTH set to %d, P_NUM_PRED set to %d", P_STORAGE_SIZE, P_CONF_WIDTH, P_NUM_PRED);
     end
 
-    // clear entry valid bits
-    for(genvar i = 0; i < P_STORAGE_SIZE; i = i + 1) begin
-        always @(posedge clk_i) begin
-            if(rst_i) begin
-                entry_valid[i] <= 1'b0; // 1'b0 means 1 bit (1') binary (b) number 0 (0),
-                                        // 32'hABCD means 32 bit hex number ABCD,
-                                        // 4'd13 means 4 bit decimal number 13
-            end
-        end
+    // delay matching input PC and valid
+    // TODO: support variable delay matching
+    always @(posedge clk_i) begin
+        pred_pc_o    <= fw_pc_i;
+        pred_valid_o <= fw_valid_i;
     end
 
     // if the signals are specific to parameter, use 'generate' and 'endgenerate'
     // in this case, there is one pred_index, fw_pc_*, validate_index ... for each P_NUM_PRED
     // so you can use 'generate' and for loop to generate signals and logic
     generate 
-        for(genvar i = 0; i < P_NUM_PRED; i = i + 1) begin
-            // --------------------------------------------------------------------------------
-            // forward data path signals (gives predictions)
-            // --------------------------------------------------------------------------------
-            logic [P_INDEX_WIDTH-1:0]           pred_index;         // truncated pc, used to index the last-value table
-            // logic [31:0]                        fw_pc_d1;           // holds the last pc value to capture pc change 
-                                                                       // // fw_pc_d1 stands for fw_pc_i delayed 1 cycle
-            // logic [31:0]                        fw_pc_d2; 
-
-            // --------------------------------------------------------------------------------
-            // feedback data path signals (updates predictor)
-            // --------------------------------------------------------------------------------
-            logic [P_INDEX_WIDTH-1:0]           validate_index;     // hashed pc, used to index the last-value table
-            logic [31:0]                        fb_result_d1;       // delayed fb_actual_i
-            logic                               fb_valid_d1;        // delayed fb_valid_i
-            
-            // latch PC
-            // always (or always_ff) @(posedge clk_i) means that the logic in the block happens every rising edge of the signal clk_i
-            // '<=' operator is nonblocking assignment, used in sequential blocks (always_ff and always blocks)
-            // always_ff @(posedge clk_i) begin 
-                // fw_pc_d1 <= fw_pc_i[i];
-                // fw_pc_d2 <= fw_pc_d1;
-            // end
-            
-            // --------------------------------------------------------------------------------
-            // forward data path logic (gives predictions)
-            // --------------------------------------------------------------------------------
-            // first, truncate pc to obtain the index
+        
+        // value table
+        for(genvar p = 0; p < P_NUM_PRED; p = p + 1) begin
+            // read
             always @(posedge clk_i) begin
-                pred_index <= fw_pc_i[i][P_INDEX_WIDTH-1:0];
-            end
-
-            // second, read storage to find the last value
-            always @(posedge clk_i) begin
-                if(validate_index == pred_index && fb_valid_d1) begin
-                    pred_result_o[i] <= fb_result_d1;
-                end
-                else begin
-                    pred_result_o[i] <= last_value_storage[pred_index];
+                if(fw_valid_i[p]) begin
+                    pred_result_o[p] <= value_table[fw_pc_i[p][P_INDEX_WIDTH-1:0]];
                 end
             end
-
-            // finally, qualify prediction by confidence
+            // write
             always @(posedge clk_i) begin
-                pred_valid_o[i] <= &confidence_counter[pred_index] && entry_valid[pred_index]; 
-            end
-
-            // --------------------------------------------------------------------------------
-            // feedback data path logic (updates predictor)
-            // --------------------------------------------------------------------------------
-            // first, truncate pc to obtain the index, delay matching the rest of feedback path for 1 cycle
-            always @(posedge clk_i) begin
-                validate_index <= fb_pc_i[i][P_INDEX_WIDTH-1:0];
-            end
-            // delay matching the index hashing
-            always @(posedge clk_i) begin
-                fb_result_d1 <= fb_actual_i[i];
-                fb_valid_d1 <= fb_valid_i[i];
-            end
-
-            // second, detect misprediction, determine if the confidence counter should be reset
-            assign mispredict_o[i] = fb_valid_d1 && 
-                                     (last_value_storage[validate_index] != fb_result_d1) && 
-                                     &confidence_counter[pred_index] && 
-                                     entry_valid[pred_index]; 
-
-            // third, update confidence counter
-            always @(posedge clk_i) begin
-                if(mispredict_o[i] || !entry_valid[validate_index]) begin // clear confidence_counter upon misprediction
-                    // {P_CONF_THRES_WIDTH{1'b0}} means extend 1'b0 to P_CONF_THRES_WIDTH number of bits
-                    confidence_counter[validate_index] <= {P_CONF_THRES_WIDTH{1'b0}};
-                    // you can also write "confidence_counter[validate_index] <= 0;" here but this is not the safest way
-                end
-                else if (fb_valid_d1 && !(&confidence_counter[validate_index])) begin
-                    // increment (saturate) confidence counter upon correct prediction
-                    confidence_counter[validate_index] <= confidence_counter[validate_index] + 1'b1; 
+                if(fb_wen[p]) begin
+                    value_table[fb_pc_i[p][P_INDEX_WIDTH-1:0]] <= fb_actual_i[p];
                 end
             end
-            
-            // finally, store new "last value"
-            always @(posedge clk_i) begin
-                if(fb_valid_d1) begin
-                    last_value_storage[validate_index] <= fb_result_d1;
-                    entry_valid[validate_index] <= 1'b1;
-                end
-            end
-            
-            
-            // --------
-            // debug
-            // --------
-            assign entry_valid_dbgo[i] = entry_valid[validate_index];
-            assign entry_val_dbgo[i] = last_value_storage[validate_index];
-            assign conf_dbgo[i] = confidence_counter[validate_index];
-            // --------
         end
         
+        // confidence unit
+        for(genvar p = 0; p < P_NUM_PRED; p = p + 1) begin
+            // read confidenc table
+            always @(posedge clk_i) begin
+                if(fw_valid_i[p]) begin
+                    fb_old_conf[p] <= confidence_table[fw_pc_i[p][P_INDEX_WIDTH-1:0]];
+                end
+            end
+            // take MSB for pred_conf_o
+            assign pred_conf_o[p] = fb_old_conf[p][P_CONF_WIDTH];
+            // generate new confidence
+            assign fb_new_conf[p] = fb_conf_incr[p]  ? fb_old_conf[p] + 1'b1 : 
+                                    fb_conf_add2     ? fb_old_conf[p] + P_CONF_WIDTH'(2) : 
+                                    fb_conf_reset[p] ? {P_CONF_WIDTH{1'b0}} : fb_old_conf[p];
+            // write to confidence table
+            always @(posedge clk_i) begin
+                if(fb_wen[p]) begin
+                    confidence_table[fb_pc_i[p][P_INDEX_WIDTH-1:0]] <= fb_new_conf[p];
+                end
+            end
+        end
+        
+        // update control unit
+        if(P_NUM_PRED == 1) begin
+            assign fb_wen        = rst_i ? 1'b0 : fb_valid_i;
+            assign fb_conf_add2  = 1'b0;                                            // not possible when P_NUM_PRED == 1
+            assign fb_conf_incr  = rst_i ? 1'b0 : (~fb_mispredict_i && ~fb_conf_i); // increment confidence only when no saturation && no misprediction
+            assign fb_conf_reset = rst_i ? 1'b0 : fb_mispredict_i;                 // reset confidence when there's misprediction
+        end
+        else if (P_NUM_PRED == 2) begin 
+            logic fb_conflict;
+            logic fb_both_correct;
+            
+            assign fb_conflict     = (fb_pc_i[0] == fb_pc_i[1]);                                    // when two update PCs match, conflict happens
+            assign fb_both_correct = ~(|fb_mispredict_i);                                           // when no misprediction (fb_mispredict_i == 0), two predictions are both correct
+            assign fb_wen          = rst_i ? 2'b00 : fb_conflict ? fb_valid_i : 2'b10;              // when conflict, merge fb[0] to fb[1], only write fb[1]
+            assign fb_conf_add2    = rst_i ? 1'b0 : fb_conflict && fb_both_correct;                 // if the predictions were both correct, add 2 to confidence counter
+            assign fb_conf_incr    = rst_i || fb_conflict ? 2'b00 :(~fb_mispredict_i & ~fb_conf_i); // increment confidence only when: // no conflict && no saturation && no misprediction
+            assign fb_conf_reset   = rst_i                           ? 2'b00 :                      // reset confidence when there's misprediction or
+                                     fb_conflict && !fb_both_correct ? 2'b10 : fb_mispredict_i;     // there's conflict and not both correct (there must be at least one wrong)
+        end
+
+        // --------
+        // debug
+        // --------
+        // --------
+    
     endgenerate
         
     
