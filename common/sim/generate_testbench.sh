@@ -1,7 +1,7 @@
 #usr/bin/bash
 
-sig_in=$(grep input.*_i "$1"/../src/"$2".sv|grep -Po [_a-z]*_i)
-sig_out=$(grep output.*_.*o "$1"/../src/"$2".sv|grep -Po [_a-z]*_[a-z]*o)
+sig_in=$(grep input.*_i "$1"/"$2".sv|grep -Po [_a-z]*_i)
+sig_out=$(grep output.*_.*o "$1"/"$2".sv|grep -Po [_a-z]*_[a-z]*o)
 
 printf "\
 // this is the auto generated testbench header\n\
@@ -25,7 +25,7 @@ class "${2^}"_tb : public Vwrapper<V"$2"> {
         }
         
         // input signals
-" > "$1""$2"_tb.h
+" > "$3"/"$2"_tb.h
 
 for sig in $sig_in; do
     printf "\
@@ -33,13 +33,13 @@ for sig in $sig_in; do
         void write_"$sig"(uint64_t "$sig"){
             device->"$sig" = "$sig";
         }
-    " >> "$1""$2"_tb.h
+    " >> "$3"/"$2"_tb.h
 done
 
 printf "\
 
         // output signals
-" >> "$1""$2"_tb.h
+" >> "$3"/"$2"_tb.h
 
 for sig in $sig_out; do
     printf "\
@@ -47,7 +47,7 @@ for sig in $sig_out; do
         uint64_t read_"$sig"(){
             return device->"$sig";
         }
-    " >> "$1""$2"_tb.h
+    " >> "$3"/"$2"_tb.h
 done
 
 printf "\
@@ -55,6 +55,6 @@ printf "\
 };
 
 #endif
-" >> "$1""$2"_tb.h
+" >> "$3"/"$2"_tb.h
 
 

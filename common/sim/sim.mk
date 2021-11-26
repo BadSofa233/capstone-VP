@@ -5,6 +5,7 @@
 
 # set verilator headers root directory
 VERILATOR_DIR = /usr/share/verilator
+VERILATOR_INCL_DIR = $(VERILATOR_DIR)/include
 
 # set the path to the common scripts
 SCRIPT_DIR = $(VP_ROOT_DIR)/common/sim
@@ -13,19 +14,31 @@ SCRIPT_DIR = $(VP_ROOT_DIR)/common/sim
 EXE = obj_dir/$(MODULE)_sim
 
 # default target, run verilator to compile RTL design, compile the C++ testbench, and execute the program
-all: $(RTL_FILES) $(SIM_FILES) verilate
-	dos2unix $(SCRIPT_DIR)/generate_testbench.sh
-	bash $(SCRIPT_DIR)/generate_testbench.sh $(SIM_DIR)/ $(MODULE)
-	g++ -I $(VERILATOR_DIR)/include -I $(VERILATOR_DIR)/include/vltstd -I $(SCRIPT_DIR) -I obj_dir $(VERILATOR_DIR)/include/verilated.cpp $(VERILATOR_DIR)/include/verilated_vcd_c.cpp $(MODULE).cpp obj_dir/V$(MODULE)__ALL.a $(EXE_COMP_ARGS) -o $(EXE)
+all: executable
 	@printf "\nStarting sims...\n\n"
 	$(EXE) $(EXE_RUNTIME_ARGS)
 	@printf "\nSims complete.\n"
 
-# only compiles the RTL design
-verilate:
-	verilator -Wall --cc $(RTL_FILES) $(VERILATOR_COMP_ARGS)
+# compiles executable
+executable: verilate testbench
+	@printf "\nCompiling executable...\n\n"
+	g++ -I $(VERILATOR_INCL_DIR) -I $(VERILATOR_INCL_DIR)/vltstd -I $(SCRIPT_DIR) -I obj_dir $(VERILATOR_INCL_DIR)/verilated.cpp $(VERILATOR_INCL_DIR)/verilated_vcd_c.cpp $(SIM_FILES) obj_dir/V$(MODULE)__ALL.a $(EXE_COMP_ARGS) -o $(EXE)
+
+# compiles the testbench
+testbench: $(SIM_FILES) $(SRC_DIR)/$(RTL_FILES)
+	@printf "\nCompiling testbench...\n\n"
+	dos2unix $(SCRIPT_DIR)/generate_testbench.sh
+	bash $(SCRIPT_DIR)/generate_testbench.sh $(SRC_DIR) $(MODULE) $(SIM_DIR)
+
+# compiles the RTL design
+verilate: $(SRC_DIR)/$(RTL_FILES) 
+	@printf "\nRunning verilate...\n\n"
+	verilator -Wall --cc $(SRC_DIR)/$(RTL_FILES) $(VERILATOR_COMP_ARGS)
 	$(MAKE) -C obj_dir -j -f V$(MODULE).mk
 
 # remove output
 clean:
-	rm -rf obj_dir
+	@printf "\nRunning clean...\n\n"
+	rm -rf obj_dir/
+	rm -f $(MODULE)_tb_trace.vcd
+	rm -f $(MODULE)_tb.h

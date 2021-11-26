@@ -29,11 +29,13 @@ class Vwrapper {
             device = new Device;
             Verilated::traceEverOn(true);
             dump_trace = DUT_DUMP_TRACE;
-            if(dump_trace) {
-                std::cout << "Dump is turned on\n";
-                dut_trace = nullptr;
-                open_trace();
-            }
+            // if(dump_trace) {
+#if DUT_DUMP_TRACE == 1
+            std::cout << "Dump is turned on\n";
+            dut_trace = nullptr;
+            open_trace();
+#endif
+            // }
             cycle = 0;
         }
         
@@ -67,30 +69,36 @@ class Vwrapper {
         
         virtual void eval(int timestamp, bool flush) {
             device->eval();
-            if(dump_trace) {
-                dut_trace->dump(timestamp);
-                if(flush) {
-                    dut_trace->flush();
-                }
+#if DUT_DUMP_TRACE == 1
+            // if(dump_trace) {
+            dut_trace->dump(timestamp);
+            if(flush) {
+                dut_trace->flush();
             }
+            // }
+#endif
         }
         
         // start waveform tracing
         virtual void open_trace() {
+#if DUT_DUMP_TRACE == 1
             if(dut_trace == nullptr) {
                 dut_trace = new VerilatedVcdC;
                 device->trace(dut_trace, 99);
                 dut_trace->open((device_name + "_trace.vcd").c_str());
                 std::cout << "trace opened\n";
             }
+#endif
         }
         
         // close waveform tracing
         virtual void close_trace() {
+#if DUT_DUMP_TRACE == 1
             if(dut_trace != nullptr) {
                 dut_trace->close();
                 dut_trace = nullptr;
             }
+#endif
         }
 
 };
