@@ -8,7 +8,7 @@
 #include <time.h>
 #include <string.h>
 
-int debug_test(Baseline_top_tb & dut, Baseline_top_cmodel & dut_cmodel); 
+int debug_test(Baseline_top_tb & dut, Baseline_top_cmodel & dut_cmodel, int P_CONF_WIDTH); 
 
 int main(int argc, char **argv, char **env) {
     
@@ -59,7 +59,7 @@ int main(int argc, char **argv, char **env) {
     Baseline_top_cmodel dut_cmodel;
     
     // TODO: testcases
-    debug_test(dut, dut_cmodel);
+    debug_test(dut, dut_cmodel, P_CONF_WIDTH);
     
     return 0;
     
@@ -67,22 +67,30 @@ int main(int argc, char **argv, char **env) {
 
 // debugging testcase, check prediction of one entry
 // let the predictor predict and validate one entry excessively
-int debug_test(Baseline_top_tb & dut, Baseline_top_cmodel & dut_cmodel) {
+int debug_test(Baseline_top_tb & dut, Baseline_top_cmodel & dut_cmodel, int P_CONF_WIDTH) {
     
-    int conf_count = 1<<4;
+    int conf_count = 1<<P_CONF_WIDTH; // == 2^P_CONF_WIDTH
     int pc = rand();
     dut.reset_1();
     
-    for(int i = 0; i < conf_count; i++) {
+    for(int i = 0; i < conf_count + 1; i++) {
         dut.write_fw_pc_i(pc);
+        dut.write_fw_valid_i(0xFFFF);
         dut.write_fb_pc_i(pc);
         dut.write_fb_actual_i(0xFFFF);
         dut.write_fb_valid_i(1);
         
         dut.tick();
         
-        // printf("itr %d ent_vld %d ent_val 0x%lX pred 0x%lX conf %d valid %d misp %d\n", i, dut.read_entry_valid_dbgo(), dut.read_entry_val_dbgo(), dut.read_pred_o(), dut.read_conf_dbgo(), dut.read_pred_valid_o(), dut.read_mispredict_o());
+        printf("itr %d fw_conf %d fw_valid 0x%lX pred 0x%lX\n", i, dut.read_pred_conf_o(), dut.read_pred_valid_o(), dut.read_pred_result_o());
         
+        // compare confidence
+        if(i != conf_count && dut.read_pred_conf_o() != 0) {
+            printf("ERROR: prediction confidence is wrong!\n");
+            return 1;
+        }
+        
+        // compare other output signals here...
     }
     
     dut.final();
