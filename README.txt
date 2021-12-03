@@ -1,5 +1,6 @@
 Useful links:
   capstone onedrive: https://uwoca-my.sharepoint.com/:f:/g/personal/yli2993_uwo_ca/ErjGdyD49idAh_QiSiVKC8kByHSl_ZOW3dAq10bCCNAP8g?e=7IN6wy
+  group progress notebook: https://uwoca-my.sharepoint.com/:o:/g/personal/yli2993_uwo_ca/EgBAexNXCM5EgikvTF77ItkBibyvEgRVQUDwqKwbkoeJ0w?e=uAfi0N
   list of RISC-V implementations: https://github.com/riscvarchive/riscv-cores-list
 
 feel free to add anything to the folders!
