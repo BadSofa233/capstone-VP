@@ -75,16 +75,24 @@ int debug_test(Baseline_top_tb & dut, Baseline_top_cmodel & dut_cmodel, int P_CO
     
     for(int i = 0; i < conf_count + 1; i++) {
         dut.write_fw_pc_i(pc);
-        dut.write_fw_valid_i(0xFFFF);
-        dut.write_fb_pc_i(pc);
-        dut.write_fb_actual_i(0xFFFF);
-        dut.write_fb_valid_i(1);
-        
+        dut.write_fw_valid_i(0xF);
         dut.tick();
+        dut.write_fb_pc_i(pc);
+        dut.write_fb_mispredict_i(dut.read_pred_result_o() != 0xFFFF); // assume execution result is 0xFFFF
+        dut.write_fb_actual_i(0xFFFF);
+        dut.write_fb_valid_i(0xF);
+        // if using cmodel:
+        // cmodel.write_...(...)
+        
+        
         
         printf("itr %d fw_conf %d fw_valid 0x%lX pred 0x%lX\n", i, dut.read_pred_conf_o(), dut.read_pred_valid_o(), dut.read_pred_result_o());
         
         // compare confidence
+        // using cmodel: 
+        // if(i != conf_count && dut.read_pred_conf_o() != cmodel.read_pred_conf_o()) {
+            // ...
+        // }
         if(i != conf_count && dut.read_pred_conf_o() != 0) {
             printf("ERROR: prediction confidence is wrong!\n");
             return 1;
