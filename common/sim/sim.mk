@@ -27,7 +27,8 @@ executable: verilate testbench
 # compiles the testbench
 testbench: $(SIM_FILES) $(SRC_DIR)/$(RTL_FILES)
 	@printf "\nCompiling testbench...\n\n"
-	dos2unix $(SCRIPT_DIR)/generate_testbench.sh
+	dos2unix -n $(SCRIPT_DIR)/generate_testbench.sh d2u_temp
+	mv -f d2u_temp $(SCRIPT_DIR)/generate_testbench.sh
 	bash $(SCRIPT_DIR)/generate_testbench.sh $(SRC_DIR) $(MODULE) $(SIM_DIR)
 
 # compiles the RTL design
