@@ -30,4 +30,5 @@ WSL Ubuntu tools:
 - gcc, g++
 - gnu make
 - verilator: sudo apt-get install verilator
+- dos2unix: sudo apt-get install dos2unix
 - RISC-V GNU toolchain: https://github.com/riscv-collab/riscv-gnu-toolchain
