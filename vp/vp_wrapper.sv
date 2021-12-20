@@ -6,7 +6,8 @@ module vp_wrapper #(
     parameter P_ALGORITHM = "VTAGE",    // algorithm to be instantiated
     parameter P_NUM_PRED = 2,           // number of concurrent predictions
     parameter P_CONF_WIDTH = 8,         // number of confidence counter bits
-    parameter P_GBH_LEN = 32
+    parameter P_GBH_LEN = 32,
+    parameter P_STORAGE_SIZE=2048
     // TODO: define more parameters for subblocks
 ) (
     // TODO: add signals for VTAGE
@@ -40,11 +41,29 @@ module vp_wrapper #(
         if(P_ALGORITHM == "VTAGE") begin
             vtage_top #(
                 // TODO: input parameters to vtage here...
+		.P_NUM_PRED(P_NUM_PRED),
+		.P_GBH_LENGTH(P_GBH_LENGTH),
+		.P_NUM_ENTRIES(P_NUM_ENTRIES),
+		.P_CONF_THRES_WIDTH(P_CONF_THRES_WIDTH),
+		.P_HASH_LENGTH(P_HASH_LENGTH)
             ) vtage_top (
                 // TODO: IO signals here, connect wrapper's IO to VP IO
-                // .fw_pc_i(a),
-                // .fw_gbh_i(b),
-                // ...
+		.fw_gbh_i(fw_gbh_i),
+                 .fw_get_i(fw_get_i),
+                 .fw_value_o(fw_value_o),
+                 .fw_conf_o(fw_conf_o),
+		.fw_tag_o(fw_tag_o),
+		.fw_useful_o(fw_useful_o),
+		.fw_valid_o(fw_valid_o),
+		.fb_incr_conf_i(fb_incr_conf_i),
+		.fb_rst_conf_i(fb_rst_conf_i),
+		.fb_incr_use_i(fb_incr_use_i),
+		.fb_decr_use_i(fb_decr_use_i),
+		.fb_load_tag_i(fb_load_tag_i),
+		.fb_tag_i(fb_tag_i),
+		.fb_load_value_i(fb_load_value_i),
+		.fb_value_i(fb_value_i)
+
             );
         end
         else if(P_ALGORITHM == "2D_STRIDE") begin
@@ -65,14 +84,12 @@ module vp_wrapper #(
                 .fw_valid_i(fw_valid_i),
                 .pred_pc_o(pred_pc_o),
                 .pred_result_o(pred_result_o),
-                // ...
-                .fw_pc_i(),
-                .fw_pc_i(),
-                .fw_pc_i(),
-                .fw_pc_i(),
-                .fw_pc_i(),
-                .fw_pc_i(),
-                .fw_pc_i()
+                .pred_conf _o(pred_conf _o),
+                .pred_valid_o(pred_valid_o),
+                .fb_pc_i(fb_pc_i),
+                .fb_actual_i(fb_actual_i),
+                .fb_mispredict_i(fb_mispredict_i),
+                .fb_valid_i(fb_valid_i)
             );
         end
 
