@@ -1,7 +1,7 @@
 #usr/bin/bash
 
 sig_in=$(grep input.*_i "$1"/"$2".sv|grep -Po [_a-z]*_i)
-sig_out=$(grep output.*_.*o "$1"/"$2".sv|grep -Po [_a-z]*_[a-z]*o)
+sig_out=$(grep output.*_.*o "$1"/"$2".sv|grep -Po [_a-z]*_o)
 
 printf "\
 // this is the auto generated testbench header\n\

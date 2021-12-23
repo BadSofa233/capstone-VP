@@ -20,16 +20,19 @@ all: executable
 	@printf "\nSims complete.\n"
 
 # compiles executable
-executable: verilate testbench
+executable: verilate testbench cmodel
 	@printf "\nCompiling executable...\n\n"
-	g++ -I $(VERILATOR_INCL_DIR) -I $(VERILATOR_INCL_DIR)/vltstd -I $(SCRIPT_DIR) -I obj_dir $(VERILATOR_INCL_DIR)/verilated.cpp $(VERILATOR_INCL_DIR)/verilated_vcd_c.cpp $(SIM_FILES) obj_dir/V$(MODULE)__ALL.a $(EXE_COMP_ARGS) -o $(EXE)
+	g++ -I $(VERILATOR_INCL_DIR) -I $(VERILATOR_INCL_DIR)/vltstd -I $(SCRIPT_DIR) -I obj_dir -I $(CM_INCL_DIR) $(CMODEL_COMP_ARGS) $(VERILATOR_INCL_DIR)/verilated.cpp $(VERILATOR_INCL_DIR)/verilated_vcd_c.cpp $(SIM_TOP_FILES) $(MODULE)_cmodel.o obj_dir/V$(MODULE)__ALL.a $(EXE_COMP_ARGS) -o $(EXE)
 
 # compiles the testbench
-testbench: $(SIM_FILES) $(SRC_DIR)/$(RTL_FILES)
-	@printf "\nCompiling testbench...\n\n"
-	dos2unix -n $(SCRIPT_DIR)/generate_testbench.sh d2u_temp
-	mv -f d2u_temp $(SCRIPT_DIR)/generate_testbench.sh
+testbench: $(SRC_DIR)/$(RTL_FILES)
+	@printf "\nGenerating testbench...\n\n"
+	dos2unix $(SCRIPT_DIR)/generate_testbench.sh
 	bash $(SCRIPT_DIR)/generate_testbench.sh $(SRC_DIR) $(MODULE) $(SIM_DIR)
+
+cmodel: $(CM_FILES)
+	@printf "\nCompiling cmodel...\n\n"
+	g++ -I $(CM_INCL_DIR) $(CMODEL_COMP_ARGS) -c $(CM_FILES)
 
 # compiles the RTL design
 verilate: $(SRC_DIR)/$(RTL_FILES) 

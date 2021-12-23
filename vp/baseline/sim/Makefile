@@ -13,8 +13,12 @@ MODULE ?= baseline_top
 # RTL source files
 RTL_FILES = $(MODULE).sv
 
-# simulation source files, TODO: add cmodel files
-SIM_FILES = $(MODULE).cpp $(MODULE)_cmodel.h
+# simulation top source files
+SIM_TOP_FILES = $(MODULE).cpp
+
+# cmodel simulation source files and include path
+CM_FILES = $(MODULE)_cmodel.h $(MODULE)_cmodel.cpp
+CM_INCL_DIR += $(VP_ROOT_DIR)/common/sim/HLS_arbitrary_Precision_Types/include/
 
 # define parameters for the block
 P_STORAGE_SIZE ?= 2048
@@ -34,6 +38,11 @@ ifeq ($(DUMP),1)
 	VERILATOR_COMP_ARGS += --trace
 	EXE_COMP_ARGS += -DDUT_DUMP_TRACE=1
 endif
+
+# write parameter definition to CMODEL
+CMODEL_COMP_ARGS += -DDEF_STORAGE_SIZE=$(P_STORAGE_SIZE)
+CMODEL_COMP_ARGS += -DDEF_CONF_WIDTH=$(P_CONF_WIDTH)
+CMODEL_COMP_ARGS += -DDEF_NUM_PRED=$(P_NUM_PRED)
 
 # write parameter definitions to sim runtime
 EXE_RUNTIME_ARGS += -P_STORAGE_SIZE $(P_STORAGE_SIZE)

@@ -117,7 +117,7 @@ module baseline_top #(
                 end
             end
             // take MSB for pred_conf_o
-            assign pred_conf_o[p] = fb_old_conf[p][P_CONF_WIDTH];
+            assign pred_conf_o[p] = fb_old_conf[p][P_CONF_WIDTH-1];
             // generate new confidence
             assign fb_new_conf[p] = fb_conf_incr[p]  ? fb_old_conf[p] + 1'b1 : 
                                     fb_conf_add2     ? fb_old_conf[p] + P_CONF_WIDTH'(2) : 
@@ -141,9 +141,9 @@ module baseline_top #(
             logic fb_conflict;
             logic fb_both_correct;
             
-            assign fb_conflict     = (fb_pc_i[0] == fb_pc_i[1]);                                    // when two update PCs match, conflict happens
+            assign fb_conflict     = (fb_pc_i[0] == fb_pc_i[1]) && (&fb_valid_i);                   // when two update PCs match, conflict happens
             assign fb_both_correct = ~(|fb_mispredict_i);                                           // when no misprediction (fb_mispredict_i == 0), two predictions are both correct
-            assign fb_wen          = rst_i ? 2'b00 : fb_conflict ? fb_valid_i : 2'b10;              // when conflict, merge fb[0] to fb[1], only write fb[1]
+            assign fb_wen          = (rst_i | ~(|fb_valid_i)) ? 2'b00 : fb_conflict ? fb_valid_i : 2'b10;              // when conflict, merge fb[0] to fb[1], only write fb[1]
             assign fb_conf_add2    = rst_i ? 1'b0 : fb_conflict && fb_both_correct;                 // if the predictions were both correct, add 2 to confidence counter
             assign fb_conf_incr    = rst_i || fb_conflict ? 2'b00 :(~fb_mispredict_i & ~fb_conf_i); // increment confidence only when: // no conflict && no saturation && no misprediction
             assign fb_conf_reset   = rst_i                           ? 2'b00 :                      // reset confidence when there's misprediction or

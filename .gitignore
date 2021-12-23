@@ -5,6 +5,9 @@ obj_dir/
 *.vcd
 *.hex
 
+# Xilinx AP library
+common/sim/HLS_arbitrary_Precision_Types
+
 # vscode
 .vscode/
 *.code-workspace

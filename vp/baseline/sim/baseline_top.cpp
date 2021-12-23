@@ -56,7 +56,8 @@ int main(int argc, char **argv, char **env) {
     Baseline_top_tb dut;
     
     // instantiate CMODEL;
-    Baseline_top_cmodel dut_cmodel;
+    // TODO: move CMODEL and DUT instantiation into testbench, modify cmodel signals inside tb
+    Baseline_top_cmodel dut_cmodel(P_NUM_PRED, P_CONF_WIDTH, P_STORAGE_SIZE);
     
     // TODO: testcases
     debug_test(dut, dut_cmodel, P_CONF_WIDTH);
@@ -86,14 +87,14 @@ int debug_test(Baseline_top_tb & dut, Baseline_top_cmodel & dut_cmodel, int P_CO
         
         
         
-        printf("itr %d fw_conf %d fw_valid 0x%lX pred 0x%lX\n", i, dut.read_pred_conf_o(), dut.read_pred_valid_o(), dut.read_pred_result_o());
+        printf("itr %d fw_conf %d fw_valid 0x%lX pred 0x%lX\n", i, dut.read_pred_conf_o() & (conf_count-1) , dut.read_pred_valid_o(), dut.read_pred_result_o());
         
         // compare confidence
         // using cmodel: 
         // if(i != conf_count && dut.read_pred_conf_o() != cmodel.read_pred_conf_o()) {
             // ...
         // }
-        if(i != conf_count && dut.read_pred_conf_o() != 0) {
+        if(i != conf_count && (dut.read_pred_conf_o() & (conf_count-1)) != 0) {
             printf("ERROR: prediction confidence is wrong!\n");
             return 1;
         }

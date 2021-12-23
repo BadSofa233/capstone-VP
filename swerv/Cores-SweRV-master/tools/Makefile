@@ -47,6 +47,8 @@ ifneq (,$(wildcard $(TBDIR)/tests/$(TEST)))
         TEST_DIR = $(TBDIR)/tests/$(TEST)
 endif
 
+debug = 1
+
 ifdef debug
  DEBUG_PLUS = +dumpon
  IRUN_DEBUG = -access +rc
