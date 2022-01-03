@@ -2,13 +2,14 @@
 // Author: Yuhan Li
 // Oct 31, 2021
 
-#include "baseline_top_tb.h"
+#include "baseline_top_tb_test.h"
 #include "baseline_top_cmodel.h"
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
 
-int debug_test(Baseline_top_tb & dut, Baseline_top_cmodel & dut_cmodel, int P_CONF_WIDTH); 
+// int debug_test(Baseline_top_tb & dut, Baseline_top_cmodel & dut_cmodel, int P_CONF_WIDTH); 
+int debug_test(Baseline_top_tb & dut, int P_CONF_WIDTH); 
 
 int main(int argc, char **argv, char **env) {
     
@@ -52,15 +53,18 @@ int main(int argc, char **argv, char **env) {
     // relay runtime parameters to verilator
     Verilated::commandArgs(argc, argv);
     
+    Baseline_top_cmodel cmodel(P_NUM_PRED, P_CONF_WIDTH, P_STORAGE_SIZE);
+    
     // instantiate the design
-    Baseline_top_tb dut;
+    Baseline_top_tb dut(&cmodel);
     
     // instantiate CMODEL;
     // TODO: move CMODEL and DUT instantiation into testbench, modify cmodel signals inside tb
-    Baseline_top_cmodel dut_cmodel(P_NUM_PRED, P_CONF_WIDTH, P_STORAGE_SIZE);
+    // Baseline_top_cmodel dut_cmodel(P_NUM_PRED, P_CONF_WIDTH, P_STORAGE_SIZE);
     
     // TODO: testcases
-    debug_test(dut, dut_cmodel, P_CONF_WIDTH);
+    // debug_test(dut, dut_cmodel, P_CONF_WIDTH);
+    debug_test(dut, P_CONF_WIDTH);
     
     return 0;
     
@@ -68,7 +72,8 @@ int main(int argc, char **argv, char **env) {
 
 // debugging testcase, check prediction of one entry
 // let the predictor predict and validate one entry excessively
-int debug_test(Baseline_top_tb & dut, Baseline_top_cmodel & dut_cmodel, int P_CONF_WIDTH) {
+// int debug_test(Baseline_top_tb & dut, Baseline_top_cmodel & dut_cmodel, int P_CONF_WIDTH) {
+int debug_test(Baseline_top_tb & dut, int P_CONF_WIDTH) {
     
     int conf_count = 1<<P_CONF_WIDTH; // == 2^P_CONF_WIDTH
     int pc = rand();
@@ -79,7 +84,7 @@ int debug_test(Baseline_top_tb & dut, Baseline_top_cmodel & dut_cmodel, int P_CO
         dut.write_fw_valid_i(0xF);
         dut.tick();
         dut.write_fb_pc_i(pc);
-        dut.write_fb_mispredict_i(dut.read_pred_result_o() != 0xFFFF); // assume execution result is 0xFFFF
+        dut.write_fb_mispredict_i(dut.read_pred_result_o(false) != 0xFFFF); // assume execution result is 0xFFFF
         dut.write_fb_actual_i(0xFFFF);
         dut.write_fb_valid_i(0xF);
         // if using cmodel:
@@ -87,14 +92,14 @@ int debug_test(Baseline_top_tb & dut, Baseline_top_cmodel & dut_cmodel, int P_CO
         
         
         
-        printf("itr %d fw_conf %d fw_valid 0x%lX pred 0x%lX\n", i, dut.read_pred_conf_o() & (conf_count-1) , dut.read_pred_valid_o(), dut.read_pred_result_o());
+        printf("itr %d fw_conf %d fw_valid 0x%lX pred 0x%lX\n", i, dut.read_pred_conf_o(false) & (conf_count-1) , dut.read_pred_valid_o(false), dut.read_pred_result_o(false));
         
         // compare confidence
         // using cmodel: 
         // if(i != conf_count && dut.read_pred_conf_o() != cmodel.read_pred_conf_o()) {
             // ...
         // }
-        if(i != conf_count && (dut.read_pred_conf_o() & (conf_count-1)) != 0) {
+        if(i != conf_count && (dut.read_pred_conf_o(false) & (conf_count-1)) != 0) {
             printf("ERROR: prediction confidence is wrong!\n");
             return 1;
         }

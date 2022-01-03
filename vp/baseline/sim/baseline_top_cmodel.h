@@ -5,7 +5,7 @@
 #ifndef BASELINE_TOP_CMODEL_H
 #define BASELINE_TOP_CMODEL_H
 
-#include "ap_int.h"
+#include <inttypes.h>
 
 class Baseline_top_cmodel {
 private:
@@ -16,7 +16,7 @@ private:
     
     // -------- internal signals -------- //
     int * last_value_storage;
-    ap_int<DEF_CONF_WIDTH> * conf_storage;
+    uint64_t * conf_storage;
 
 public:
     // -------- input signals -------- //
@@ -24,22 +24,23 @@ public:
     bool rst_i;          // active high reset
     
     // forward input interface signals
-    ap_int<DEF_NUM_PRED*31>           fw_pc_i;        // current instruction address
-    ap_int<DEF_NUM_PRED>              fw_valid_i;     // current instruction address valid qualifier
+    // TODO: clean up
+    uint64_t                        fw_pc_i;        // current instruction address
+    uint64_t                        fw_valid_i;     // current instruction address valid qualifier
 
     // validation interface (feedback) signals
-    ap_int<DEF_NUM_PRED*31>           fb_pc_i;        // address of execution result feedback
-    ap_int<DEF_NUM_PRED*31>           fb_actual_i;    // true execution result of the instruction
-    ap_int<DEF_NUM_PRED>              fb_mispredict_i;// indicates misprediction
-    ap_int<DEF_NUM_PRED>              fb_conf_i;      // indicates if the prediction confidence was saturated
-    ap_int<DEF_NUM_PRED>              fb_valid_i;      // valid qualifier of feedback interface
+    uint64_t                        fb_pc_i;        // address of execution result feedback
+    uint64_t                        fb_actual_i;    // true execution result of the instruction
+    uint64_t                        fb_mispredict_i;// indicates misprediction
+    uint64_t                        fb_conf_i;      // indicates if the prediction confidence was saturated
+    uint64_t                        fb_valid_i;      // valid qualifier of feedback interface
 
     // -------- output signals -------- //
     // forward prediction interface signals
-    ap_int<DEF_NUM_PRED*31>           pred_pc_o;      // forward input pc delay matched, used for update
-    ap_int<DEF_NUM_PRED*31>           pred_result_o;  // prediction result
-    ap_int<DEF_NUM_PRED>              pred_conf_o;    // prediction result's confidence, 1 if saturated, 0 else
-    ap_int<DEF_NUM_PRED>              pred_valid_o;   // qualifies the prediction result
+    uint64_t                        pred_pc_o;      // forward input pc delay matched, used for update
+    uint64_t                        pred_result_o;  // prediction result
+    uint64_t                        pred_conf_o;    // prediction result's confidence, 1 if saturated, 0 else
+    uint64_t                        pred_valid_o;   // qualifies the prediction result
 
 private:
     // -------- internal functions -------- //

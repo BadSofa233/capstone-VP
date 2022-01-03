@@ -22,7 +22,7 @@ all: executable
 # compiles executable
 executable: verilate testbench cmodel
 	@printf "\nCompiling executable...\n\n"
-	g++ -I $(VERILATOR_INCL_DIR) -I $(VERILATOR_INCL_DIR)/vltstd -I $(SCRIPT_DIR) -I obj_dir -I $(CM_INCL_DIR) $(CMODEL_COMP_ARGS) $(VERILATOR_INCL_DIR)/verilated.cpp $(VERILATOR_INCL_DIR)/verilated_vcd_c.cpp $(SIM_TOP_FILES) $(MODULE)_cmodel.o obj_dir/V$(MODULE)__ALL.a $(EXE_COMP_ARGS) -o $(EXE)
+	g++ -I $(VERILATOR_INCL_DIR) -I $(VERILATOR_INCL_DIR)/vltstd -I $(SCRIPT_DIR) -I obj_dir $(CMODEL_COMP_ARGS) $(VERILATOR_INCL_DIR)/verilated.cpp $(VERILATOR_INCL_DIR)/verilated_vcd_c.cpp $(SIM_TOP_FILES) $(MODULE)_cmodel.o obj_dir/V$(MODULE)__ALL.a $(EXE_COMP_ARGS) -o $(EXE)
 
 # compiles the testbench
 testbench: $(SRC_DIR)/$(RTL_FILES)
@@ -32,7 +32,7 @@ testbench: $(SRC_DIR)/$(RTL_FILES)
 
 cmodel: $(CM_FILES)
 	@printf "\nCompiling cmodel...\n\n"
-	g++ -I $(CM_INCL_DIR) $(CMODEL_COMP_ARGS) -c $(CM_FILES)
+	g++ $(CMODEL_COMP_ARGS) -c $(CM_FILES)
 
 # compiles the RTL design
 verilate: $(SRC_DIR)/$(RTL_FILES) 
@@ -46,3 +46,5 @@ clean:
 	rm -rf obj_dir/
 	rm -f $(MODULE)_tb_trace.vcd
 	rm -f $(MODULE)_tb.h
+	rm -f $(MODULE)_cmodel.gch
+	rm -f $(MODULE)_cmodel.o

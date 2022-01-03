@@ -11,7 +11,7 @@ Baseline_top_cmodel::Baseline_top_cmodel(int num_pred, int conf_width, int stora
     
     // assign storage space for value table
     last_value_storage = new int[P_STORAGE_SIZE];
-    conf_storage = new ap_int<DEF_CONF_WIDTH>[P_STORAGE_SIZE];
+    conf_storage = new uint64_t[P_STORAGE_SIZE];
 }
 
 Baseline_top_cmodel::~Baseline_top_cmodel() {
