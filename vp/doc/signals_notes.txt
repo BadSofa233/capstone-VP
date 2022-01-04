@@ -1,0 +1,18 @@
+This is the notes for the useful signals in the SweRV CPU
+Signal names are listed in regular expression
+
+Signal Name                     Declared in                     Description
+ifc_fetch_addr_f1               ifu.sv                          Lab11 P?, the next instruction address computed in the FC1 stage
+ifu_fetch_data                  ifu.sv                          Lab11 P?, four instructions fetched from ifc_fetch_addr_f1
+ifu_i0_instr                    swerv.sv                        Lab11 P?, instructions to be decoded, fetched by ifu
+i0_result_e3_final              dec_decode_ctl.sv               Lab11 P?, final result from E3 stage
+i0_result_e4_final              dec_decode_ctl.sv               Lab11 P?, final result from E4 stage
+i0_result_wb                    dec_decode_ctl.sv               Lab12 P?, I0 result at writeback stage
+i0_rs[12]_d                     exu.sv                          Lab12 P?, ALU pipe source operand data
+i0_rs1_final_d                  exu.sv                          Lab12 P?, I0_rs1_d qualified with dec_csr_ren_d, only present in way 0 ALU pipe
+exu_lsu_rs[12]_d                exu.sv                          Lab12 P?, operand data for LSU
+mul_rs[12]_d                    exu.sv                          Lab12 P?, operand data for MUL
+div_rs[12]_d                    exu.sv                          Lab12 P?, operand data for DIV
+i0_e1_ctl_en                    exu.sv                          Lab12 P9, ALU 0 pipeline enable signal
+dec_i0_alu_decode_d             dec_decode_ctl.sv               Lab12 P10, ALU 0 pipe valid signal
+i0_result_wb_raw                dec_decode_ctl.sv               Lab12 P15, way 0 result at wb stage
