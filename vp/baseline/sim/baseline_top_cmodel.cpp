@@ -27,19 +27,31 @@ void Baseline_top_cmodel::tick() {
 }
 
 void Baseline_top_cmodel::generate_prediction() {
-    // value table lookup, note that there is a 1 cycle RAM read delay 
-    
-    
-    // confidence table lookup, 1 cycle delay
-    
-    
-    // compute fw_pred_o
-    
-    // compute fw_conf_o
-    
-    // compute fw_pc_o
-    
-    // compute fw_valid_o
+    if(P_NUM_PRED == 2) {
+        // value table lookup, note that there is a 1 cycle RAM read delay
+        unsigned fw_pc_0 = ; // read lower 32 bits of fw_pc_i
+        unsigned fw_pc_1 = ; // read higher 32 bits or fw_pc_i
+        uint64_t pred_value_0 = last_value_storage[fw_pc_0];
+        uint64_t pred_value_1 = last_value_storage[fw_pc_1];
+        // TODO: take care of delay, don't worry about this now
+        
+        
+        // confidence table lookup, 1 cycle delay
+        uint64_t pred_conf_0 = conf_storage[fw_pc_0];
+        uint64_t pred_conf_1 = conf_storage[fw_pc_0];
+        // TODO: handle delay
+        
+        // compute fw_pred_o
+        
+        // compute fw_conf_o
+        
+        // compute fw_pc_o
+        
+        // compute fw_valid_o
+    }
+    else { // one prediction per cycle
+        
+    }
 }
 
 void Baseline_top_cmodel::update_storage() {
