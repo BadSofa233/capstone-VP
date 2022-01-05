@@ -2,7 +2,7 @@
 // Author: Yuhan Li
 // Oct 31, 2021
 
-#include "baseline_top_tb_test.h"
+#include "baseline_top_tb.h"
 #include "baseline_top_cmodel.h"
 #include <stdio.h>
 #include <time.h>

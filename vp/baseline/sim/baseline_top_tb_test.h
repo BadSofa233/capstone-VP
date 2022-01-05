@@ -29,25 +29,27 @@ class Baseline_top_tb : public Vwrapper<Vbaseline_top> {
         void tick() override {
             Vwrapper::tick();
             cmodel->tick();
-            compare();
+            compare_pred();
         }
         
-        void compare() {
-            if(device->pred_pc_o != cmodel->pred_pc_o) {
-                printf("ERROR: pred_pc_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", cmodel->pred_pc_o, device->pred_pc_o);
-                exit(1);
-            }
-            if(device->pred_result_o != cmodel->pred_result_o) {
-                printf("ERROR: pred_result_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", cmodel->pred_result_o, device->pred_result_o);
-                exit(1);
-            }
-            if(device->pred_conf_o != cmodel->pred_conf_o) {
-                printf("ERROR: pred_conf_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", cmodel->pred_conf_o, device->pred_conf_o);
-                exit(1);
-            }
+        void compare_pred() {
             if(device->pred_valid_o != cmodel->pred_valid_o) {
                 printf("ERROR: pred_valid_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", cmodel->pred_valid_o, device->pred_valid_o);
                 exit(1);
+            }
+            if(cmodel->pred_valid_o == 1) {
+                if(device->pred_pc_o != cmodel->pred_pc_o) {
+                    printf("ERROR: pred_pc_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", cmodel->pred_pc_o, device->pred_pc_o);
+                    exit(1);
+                }
+                if(device->pred_result_o != cmodel->pred_result_o) {
+                    printf("ERROR: pred_result_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", cmodel->pred_result_o, device->pred_result_o);
+                    exit(1);
+                }
+                if(device->pred_conf_o != cmodel->pred_conf_o) {
+                    printf("ERROR: pred_conf_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", cmodel->pred_conf_o, device->pred_conf_o);
+                    exit(1);
+                }
             }
         }
         

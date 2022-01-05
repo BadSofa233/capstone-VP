@@ -37,6 +37,8 @@ module baseline_top #(
 ) (
     // define input and output signals here, use type 'logic'
     
+    // TB_GEN_DEF CLOCK clk_i
+    // TB_GEN_DEF RESET rst_i
     input   logic                                       clk_i,          // main clock
     input   logic                                       rst_i,          // active high reset
     
@@ -46,15 +48,18 @@ module baseline_top #(
     // --------
     
     // forward input interface signals
+    // TB_GEN_DEF INTERFACE fw DIR I CTRL VALID
     input   logic [P_NUM_PRED-1:0][31:0]                    fw_pc_i,        // current instruction address
     input   logic [P_NUM_PRED-1:0]                          fw_valid_i,     // current instruction address valid qualifier
     // forward prediction interface signals
+    // TB_GEN_DEF INTERFACE pred DIR O CTRL VALID
     output  logic [P_NUM_PRED-1:0][31:0]                    pred_pc_o,      // forward input pc delay matched, used for update
     output  logic [P_NUM_PRED-1:0][31:0]                    pred_result_o,  // prediction result
     output  logic [P_NUM_PRED-1:0]                          pred_conf_o,    // prediction result's confidence, 1 if saturated, 0 else
     output  logic [P_NUM_PRED-1:0]                          pred_valid_o,   // qualifies the prediction result
 
     // validation interface (feedback) signals
+    // TB_GEN_DEF INTERFACE fb DIR I CTRL VALID
     input   logic [P_NUM_PRED-1:0][31:0]                    fb_pc_i,        // address of execution result feedback
     input   logic [P_NUM_PRED-1:0][31:0]                    fb_actual_i,    // true execution result of the instruction
     input   logic [P_NUM_PRED-1:0]                          fb_mispredict_i,// indicates misprediction
