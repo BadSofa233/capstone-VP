@@ -38,15 +38,15 @@ void Baseline_top_cmodel::generate_prediction() {
         // value table lookup, note that there is a 1 cycle RAM read delay
         unsigned fw_pc_0 = (unsigned)fw_pc_i; // read lower 32 bits of fw_pc_i
         unsigned fw_pc_1 = fw_pc_i >> 32; // read higher 32 bits or fw_pc_i
-        uint64_t pred_value_0 = last_value_storage[fw_pc_0];
-        uint64_t pred_value_1 = last_value_storage[fw_pc_1];
+        uint64_t pred_value_0 = last_value_storage[fw_pc_0 % P_STORAGE_SIZE];
+        uint64_t pred_value_1 = last_value_storage[fw_pc_1 % P_STORAGE_SIZE];
         
         // confidence table lookup, 1 cycle delay
-        uint64_t pred_conf_0 = conf_storage[fw_pc_0];
-        uint64_t pred_conf_1 = conf_storage[fw_pc_1];
+        uint64_t pred_conf_0 = conf_storage[fw_pc_0 % P_STORAGE_SIZE];
+        uint64_t pred_conf_1 = conf_storage[fw_pc_1 % P_STORAGE_SIZE];
         // determine if pred_conf_0 and pred_conf_1 are saturated
-        unsigned pred_conf_0 = (pred_conf_0 == (1<<P_CONF_WIDTH)-1);
-        unsigned pred_conf_1 = (pred_conf_1 == (1<<P_CONF_WIDTH)-1);
+        unsigned pred_conf_sat_0 = (pred_conf_0 == (1<<P_CONF_WIDTH)-1);
+        unsigned pred_conf_sat_1 = (pred_conf_1 == (1<<P_CONF_WIDTH)-1);
         
         // compute pred_result_o
         if(clk_i) {
@@ -55,7 +55,7 @@ void Baseline_top_cmodel::generate_prediction() {
         
         // compute pred_conf_o
         if(clk_i) {
-            pred_conf_o = (pre_conf_1<<1) | pre_conf_0;
+            pred_conf_o = (pred_conf_sat_1 << 1) | pred_conf_sat_0;
         }
         
         // compute pred_pc_o
