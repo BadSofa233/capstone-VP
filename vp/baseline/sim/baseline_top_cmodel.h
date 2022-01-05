@@ -20,7 +20,7 @@ private:
 
 public:
     // -------- input signals -------- //
-    bool clk_i;          // TODO: do we need this?
+    bool clk_i;          // clock signal, used to determine delay
     bool rst_i;          // active high reset
     
     // forward input interface signals

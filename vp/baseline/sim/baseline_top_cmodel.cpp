@@ -22,6 +22,13 @@ Baseline_top_cmodel::~Baseline_top_cmodel() {
 }
 
 void Baseline_top_cmodel::tick() {
+    clk_i = 0;
+    generate_prediction();
+    update_storage();
+    clk_i = 1;
+    generate_prediction();
+    update_storage();
+    clk_i = 0;
     generate_prediction();
     update_storage();
 }
@@ -29,25 +36,37 @@ void Baseline_top_cmodel::tick() {
 void Baseline_top_cmodel::generate_prediction() {
     if(P_NUM_PRED == 2) {
         // value table lookup, note that there is a 1 cycle RAM read delay
-        unsigned fw_pc_0 = ; // read lower 32 bits of fw_pc_i
-        unsigned fw_pc_1 = ; // read higher 32 bits or fw_pc_i
+        unsigned fw_pc_0 = (unsigned)fw_pc_i; // read lower 32 bits of fw_pc_i
+        unsigned fw_pc_1 = fw_pc_i >> 32; // read higher 32 bits or fw_pc_i
         uint64_t pred_value_0 = last_value_storage[fw_pc_0];
         uint64_t pred_value_1 = last_value_storage[fw_pc_1];
-        // TODO: take care of delay, don't worry about this now
-        
         
         // confidence table lookup, 1 cycle delay
         uint64_t pred_conf_0 = conf_storage[fw_pc_0];
-        uint64_t pred_conf_1 = conf_storage[fw_pc_0];
-        // TODO: handle delay
+        uint64_t pred_conf_1 = conf_storage[fw_pc_1];
+        // determine if pred_conf_0 and pred_conf_1 are saturated
+        unsigned pred_conf_0 = (pred_conf_0 == (1<<P_CONF_WIDTH)-1);
+        unsigned pred_conf_1 = (pred_conf_1 == (1<<P_CONF_WIDTH)-1);
         
-        // compute fw_pred_o
+        // compute pred_result_o
+        if(clk_i) {
+            pred_result_o = (pred_value_1 << 32) | pred_value_0;
+        }
         
-        // compute fw_conf_o
+        // compute pred_conf_o
+        if(clk_i) {
+            pred_conf_o = (pre_conf_1<<1) | pre_conf_0;
+        }
         
-        // compute fw_pc_o
+        // compute pred_pc_o
+        if(clk_i) {
+            pred_pc_o = fw_pc_i;
+        }
         
-        // compute fw_valid_o
+        // compute pred_valid_o
+        if(clk_i) {
+            pred_valid_o = fw_valid_i;
+        }
     }
     else { // one prediction per cycle
         
