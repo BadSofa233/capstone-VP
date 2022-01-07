@@ -69,7 +69,26 @@ void Baseline_top_cmodel::generate_prediction() {
         }
     }
     else { // one prediction per cycle
+        // value table lookup, note that there is a 1 cycle RAM read delay
+        uint64_t pred_value_i = last_value_storage[fw_pc_i];
+
+        // confidence table lookup, 1 cycle delay
+        uint64_t pred_conf_i = conf_storage[fw_pc_i];
+
+        // determine if pred_conf_i is saturated
+        unsigned pred_conf_sat_i = (pred_conf_i == (1<<P_CONF_WIDTH)-1);
+
+        // compute pred_result_o
+        pred_result_o = pred_value_i;
         
+        // compute pred_conf_o
+        pred_conf_o = pred_conf_sat_i;
+        
+        // compute pred_pc_o
+        pred_pc_o = fw_pc_i;
+        
+        // compute pred_valid_o
+        pred_valid_o = fw_valid_i;
     }
 }
 
