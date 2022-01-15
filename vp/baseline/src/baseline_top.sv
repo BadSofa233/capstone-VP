@@ -31,6 +31,7 @@ module baseline_top #(
                                                         // default to 8
                                                 
     parameter   P_NUM_PRED      = `P_NUM_PRED,          // max number of predictions that can be made every cycle
+    parameter   P_PACKED_PRED   = 4,                    // number of results packed in one prediction
 
     // localparams are like 'const' in C++. They cannot be modified elsewhere
     localparam  P_INDEX_WIDTH   = $clog2(P_STORAGE_SIZE)// number of LSBs of pc used to index the table
@@ -148,7 +149,7 @@ module baseline_top #(
             
             assign fb_conflict     = (fb_pc_i[0] == fb_pc_i[1]) && (&fb_valid_i);                   // when two update PCs match, conflict happens
             assign fb_both_correct = ~(|fb_mispredict_i);                                           // when no misprediction (fb_mispredict_i == 0), two predictions are both correct
-            assign fb_wen          = (rst_i | ~(|fb_valid_i)) ? 2'b00 : fb_conflict ? fb_valid_i : 2'b10;              // when conflict, merge fb[0] to fb[1], only write fb[1]
+            assign fb_wen          = (rst_i | ~(|fb_valid_i)) ? 2'b00 : fb_conflict ? 2'b10 : fb_valid_i;              // when conflict, merge fb[0] to fb[1], only write fb[1]
             assign fb_conf_add2    = rst_i ? 1'b0 : fb_conflict && fb_both_correct;                 // if the predictions were both correct, add 2 to confidence counter
             assign fb_conf_incr    = rst_i || fb_conflict ? 2'b00 :(~fb_mispredict_i & ~fb_conf_i); // increment confidence only when: // no conflict && no saturation && no misprediction
             assign fb_conf_reset   = rst_i                           ? 2'b00 :                      // reset confidence when there's misprediction or
