@@ -393,6 +393,10 @@ module swerv
 
 `ifndef RV_BUILD_AXI4
 
+   // VP signals
+   vp_pkt_t vp_pred_pkt;
+   vp_pkt_t vp_update_pkt;
+
    // LSU AXI signals
    // AXI Write Channels
    logic                         lsu_axi_awvalid;
@@ -986,6 +990,8 @@ module swerv
    ifu ifu (
        .clk_override(dec_tlu_ifu_clk_override),
        .rst_l(core_rst_l),
+       .vp_pred_pkt(vp_pred_pkt),
+       .vp_update_pkt(vp_update_pkt),
        .*
    );
 

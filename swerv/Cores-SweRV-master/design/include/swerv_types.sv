@@ -126,6 +126,17 @@ typedef struct packed {
                        logic way;
 `endif
                        } predict_pkt_t;
+                       
+`ifdef VP_ENABLED
+typedef struct packed {
+                       logic [1:0][31:0]              result;
+                       logic [1:0]                    misp;
+                       logic [1:0][31:0]              actual;
+                       logic [1:0][31:0]              pc;
+                       logic [1:0][`P_CONF_WIDTH-1:0] conf;
+                       logic [1:0]                    valid;
+                      } vp_pkt_t;
+`endif
 
 typedef struct packed {
                        logic legal;

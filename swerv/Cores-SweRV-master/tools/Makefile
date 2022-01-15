@@ -72,7 +72,7 @@ OFILES = $(TEST).o
 VPATH = $(TEST_DIR) $(BUILD_DIR) $(TBDIR)
 TBFILES = $(TBDIR)/tb_top.sv $(TBDIR)/ahb_sif.sv
 
-defines = $(BUILD_DIR)/common_defines.vh ${RV_ROOT}/design/include/swerv_types.sv
+defines = $(BUILD_DIR)/common_defines.vh ${RV_ROOT}/design/include/vp_defines.vh ${RV_ROOT}/design/include/swerv_types.sv
 includes = -I${RV_ROOT}/design/include -I${RV_ROOT}/design/lib  -I${BUILD_DIR}
 
 # CFLAGS for verilator generated Makefiles. Without -std=c++11 it complains for `auto` variables
