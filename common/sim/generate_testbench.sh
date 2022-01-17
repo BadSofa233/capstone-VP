@@ -58,7 +58,7 @@ class "${2^}"_tb : public Vwrapper<V"$2"> {
 for inf in "${inf_out[@]}"; do
     printf "\
             compare_"$inf"();
-    " >> "$3"/"$2"_tb.h
+" >> "$3"/"$2"_tb.h
 done
 
 printf "\
