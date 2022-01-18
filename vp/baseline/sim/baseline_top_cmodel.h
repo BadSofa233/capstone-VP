@@ -21,6 +21,7 @@ private:
 public:
     // -------- input signals -------- //
     bool clk_i;          // clock signal, used to determine delay
+    bool clk_ram_i;      // clock for value table and confidence table, not used in sim
     bool rst_i;          // active high reset
     
     // forward input interface signals

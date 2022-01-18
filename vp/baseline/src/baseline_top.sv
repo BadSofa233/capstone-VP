@@ -41,6 +41,7 @@ module baseline_top #(
     // TB_GEN_DEF CLOCK clk_i
     // TB_GEN_DEF RESET rst_i
     input   logic                                       clk_i,          // main clock
+    input   logic                                       clk_ram_i,      // ram clock
     input   logic                                       rst_i,          // active high reset
     
     // --------
@@ -69,8 +70,8 @@ module baseline_top #(
 );
 
     // declare signals and logic here
-    logic [P_STORAGE_SIZE-1:0][31:0]                        value_table; // memory for last values
-    logic [P_STORAGE_SIZE-1:0][P_CONF_WIDTH-1:0]            confidence_table;
+    // logic [P_STORAGE_SIZE-1:0][31:0]                        value_table; // memory for last values
+    // logic [P_STORAGE_SIZE-1:0][P_CONF_WIDTH-1:0]            confidence_table;
     
     logic [P_NUM_PRED-1:0]                                  fb_wen;
     logic [P_NUM_PRED-1:0]                                  fb_conf_incr;
@@ -98,42 +99,99 @@ module baseline_top #(
     // so you can use 'generate' and for loop to generate signals and logic
     generate 
         
-        // value table
-        for(genvar p = 0; p < P_NUM_PRED; p = p + 1) begin
-            // read
-            always @(posedge clk_i) begin
-                if(fw_valid_i[p]) begin
-                    pred_result_o[p] <= value_table[fw_pc_i[p][P_INDEX_WIDTH-1:0]];
-                end
-            end
-            // write
-            always @(posedge clk_i) begin
-                if(fb_wen[p]) begin
-                    value_table[fb_pc_i[p][P_INDEX_WIDTH-1:0]] <= fb_actual_i[p];
-                end
-            end
+        // value table and confidence table
+        if(P_NUM_PRED == 1) begin
+            multiport_ram #(
+                .P_MEM_DEPTH        (P_STORAGE_SIZE),
+                .P_MEM_WIDTH        (32),
+                .P_SIM              (1),
+                .P_METHOD           ("MULTIPUMPED")
+            ) value_table (
+                .clk_i              (clk_i),
+                .clk_mp_i           (clk_ram_i),
+                .rda_addr_i         (fw_pc_i[P_INDEX_WIDTH-1:0]),
+                .rdb_addr_i         ({P_INDEX_WIDTH{1'b0}}),
+                .rda_data_o         (pred_result_o),
+                .rdb_data_o         (),
+                .wra_addr_i         (fb_pc_i[P_INDEX_WIDTH-1:0]),
+                .wra_data_i         (fb_actual_i),
+                .wra_valid_i        (fb_wen),
+                .wrb_addr_i         ({P_INDEX_WIDTH{1'b0}}),
+                .wrb_data_i         (32'b0),
+                .wrb_valid_i        (1'b0)
+            );
+            
+            multiport_ram #(
+                .P_MEM_DEPTH        (P_STORAGE_SIZE),
+                .P_MEM_WIDTH        (P_CONF_WIDTH),
+                .P_SIM              (1),
+                .P_METHOD           ("MULTIPUMPED")
+            ) confidence_table (
+                .clk_i              (clk_i),
+                .clk_mp_i           (clk_ram_i),
+                .rda_addr_i         (fw_pc_i[P_INDEX_WIDTH-1:0]),
+                .rdb_addr_i         ({P_INDEX_WIDTH{1'b0}}),
+                .rda_data_o         (fb_old_conf),
+                .rdb_data_o         (),
+                .wra_addr_i         (fb_pc_i[P_INDEX_WIDTH-1:0]),
+                .wra_data_i         (fb_new_conf),
+                .wra_valid_i        (fb_wen),
+                .wrb_addr_i         ({P_INDEX_WIDTH{1'b0}}),
+                .wrb_data_i         ({P_CONF_WIDTH{1'b0}}),
+                .wrb_valid_i        (1'b0)
+            );
+        end
+        else begin
+            multiport_ram #(
+                .P_MEM_DEPTH        (P_STORAGE_SIZE),
+                .P_MEM_WIDTH        (32),
+                .P_SIM              (1),
+                .P_METHOD           ("MULTIPUMPED")
+            ) value_table (
+                .clk_i              (clk_i),
+                .clk_mp_i           (clk_ram_i),
+                .rda_addr_i         (fw_pc_i[0][P_INDEX_WIDTH-1:0]),
+                .rdb_addr_i         (fw_pc_i[1][P_INDEX_WIDTH-1:0]),
+                .rda_data_o         (pred_result_o[0]),
+                .rdb_data_o         (pred_result_o[1]),
+                .wra_addr_i         (fb_pc_i[0][P_INDEX_WIDTH-1:0]),
+                .wra_data_i         (fb_actual_i[0]),
+                .wra_valid_i        (fb_wen[0]),
+                .wrb_addr_i         (fb_pc_i[1][P_INDEX_WIDTH-1:0]),
+                .wrb_data_i         (fb_actual_i[1]),
+                .wrb_valid_i        (fb_wen[1])
+            );
+            
+            multiport_ram #(
+                .P_MEM_DEPTH        (P_STORAGE_SIZE),
+                .P_MEM_WIDTH        (P_CONF_WIDTH),
+                .P_SIM              (1),
+                .P_METHOD           ("MULTIPUMPED")
+            ) confidence_table (
+                .clk_i              (clk_i),
+                .clk_mp_i           (clk_ram_i),
+                .rda_addr_i         (fw_pc_i[0][P_INDEX_WIDTH-1:0]),
+                .rdb_addr_i         (fw_pc_i[1][P_INDEX_WIDTH-1:0]),
+                .rda_data_o         (fb_old_conf[0]),
+                .rdb_data_o         (fb_old_conf[1]),
+                .wra_addr_i         (fb_pc_i[0][P_INDEX_WIDTH-1:0]),
+                .wra_data_i         (fb_new_conf[0]),
+                .wra_valid_i        (fb_wen[0]),
+                .wrb_addr_i         (fb_pc_i[1][P_INDEX_WIDTH-1:0]),
+                .wrb_data_i         (fb_new_conf[1]),
+                .wrb_valid_i        (fb_wen[1])
+            );
         end
         
         // confidence unit
+        
         for(genvar p = 0; p < P_NUM_PRED; p = p + 1) begin
-            // read confidenc table
-            always @(posedge clk_i) begin
-                if(fw_valid_i[p]) begin
-                    fb_old_conf[p] <= confidence_table[fw_pc_i[p][P_INDEX_WIDTH-1:0]];
-                end
-            end
             // take MSB for pred_conf_o
             assign pred_conf_o[p] = fb_old_conf[p][P_CONF_WIDTH-1];
             // generate new confidence
             assign fb_new_conf[p] = fb_conf_incr[p]  ? fb_old_conf[p] + 1'b1 : 
                                     fb_conf_add2     ? fb_old_conf[p] + P_CONF_WIDTH'(2) : 
                                     fb_conf_reset[p] ? {P_CONF_WIDTH{1'b0}} : fb_old_conf[p];
-            // write to confidence table
-            always @(posedge clk_i) begin
-                if(fb_wen[p]) begin
-                    confidence_table[fb_pc_i[p][P_INDEX_WIDTH-1:0]] <= fb_new_conf[p];
-                end
-            end
         end
         
         // update control unit
@@ -156,11 +214,6 @@ module baseline_top #(
                                      fb_conflict && !fb_both_correct ? 2'b10 : fb_mispredict_i;     // there's conflict and not both correct (there must be at least one wrong)
         end
 
-        // --------
-        // debug
-        // --------
-        // --------
-    
     endgenerate
         
     

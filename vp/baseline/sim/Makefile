@@ -12,13 +12,13 @@ MODULE ?= baseline_top
 
 # RTL source files
 RTL_FILES = $(MODULE).sv
+RTL_FILES += $(VP_ROOT_DIR)/vp/multiport_ram/src/multiport_ram.sv
 
 # simulation top source files
 SIM_TOP_FILES = $(MODULE).cpp
 
 # cmodel simulation source files and include path
 CM_FILES = $(MODULE)_cmodel.h $(MODULE)_cmodel.cpp
-# CM_INCL_DIR += $(VP_ROOT_DIR)/common/sim/HLS_arbitrary_Precision_Types/include/
 
 # define parameters for the block
 P_STORAGE_SIZE ?= 2048
