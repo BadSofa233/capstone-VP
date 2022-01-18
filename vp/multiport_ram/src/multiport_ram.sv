@@ -55,13 +55,16 @@ module multiport_ram #(
 );
 
     generate
+    
         if(P_METHOD == "MULTIPUMPED") begin
+        
             logic [P_MEM_WIDTH-1:0] mem[P_MEM_DEPTH-1:0];
             initial begin
                 for(integer i = 0; i < P_MEM_DEPTH; i = i + 1) begin
                     mem[i] <= 0;
                 end
             end
+            
             // logic for multipumping
             logic                       write_not_read_en;
             logic                       write_not_read_sel;
@@ -72,41 +75,45 @@ module multiport_ram #(
             logic [P_MEM_WIDTH-1:0]     rda_data_buf1;
             logic [P_MEM_WIDTH-1:0]     rdb_data_buf1;
             
-            // always @(posedge clk_i) begin
-                // write_not_read <= ~write_not_read;
-            // end
-            
+            // time multiplexing between read and write
             assign write_not_read_en = ~clk_i;
             assign write_not_read_sel = clk_i;
             assign addr_a = write_not_read_sel ? wra_addr_i : rda_addr_i;
             assign addr_b = write_not_read_sel ? wrb_addr_i : rdb_addr_i;
             
+            // port A
             always @(posedge clk_mp_i) begin
-                if (wra_valid_i & write_not_read_en) begin
+                if (wra_valid_i & write_not_read_en) begin // only write when it's the write time slice
                     mem[addr_a] <= wra_data_i;
                 end
                 rda_data_buf0 <= mem[addr_a];
             end
+            // port B
             always @(posedge clk_mp_i) begin
-                if (wrb_valid_i & write_not_read_en) begin
+                if (wrb_valid_i & write_not_read_en) begin // only write when it's the write time slice
                     mem[addr_b] <= wrb_data_i;
                 end
                 rdb_data_buf0 <= mem[addr_b];
             end
             
+            // stretch the read output data
+            // first store data for the next clk_mp_i cycle
             always @(posedge clk_mp_i) begin
                 if(write_not_read_en) begin
                     rda_data_buf1 <= rda_data_buf0;
                     rdb_data_buf1 <= rdb_data_buf0;
                 end
             end
-            
+            // when it's the write time slice, use stored read data
             assign rda_data_o = write_not_read_en ? rda_data_buf1 : rda_data_buf0;
             assign rdb_data_o = write_not_read_en ? rdb_data_buf1 : rdb_data_buf0;
             
         end
-        else if(P_METHOD == "BANKED") begin
+        
+        else if(P_METHOD == "BANKED") begin // TODO
         
         end
+        
     endgenerate
+    
 endmodule
