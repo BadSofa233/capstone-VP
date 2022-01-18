@@ -30,8 +30,7 @@ module baseline_top #(
                                                         // estimated probability of error <= 1/(2^P_CONF_WIDTH)
                                                         // default to 8
                                                 
-    parameter   P_NUM_PRED      = `P_NUM_PRED,          // max number of predictions that can be made every cycle
-    parameter   P_PACKED_PRED   = 4,                    // number of results packed in one prediction
+    parameter   P_NUM_PRED      = `P_NUM_PRED           // max number of predictions that can be made every cycle
 
     // localparams are like 'const' in C++. They cannot be modified elsewhere
     localparam  P_INDEX_WIDTH   = $clog2(P_STORAGE_SIZE)// number of LSBs of pc used to index the table

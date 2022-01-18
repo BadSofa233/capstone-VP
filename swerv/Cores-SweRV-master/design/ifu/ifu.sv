@@ -199,21 +199,6 @@ module ifu
 
    output logic ifu_miss_state_idle,   // There is no outstanding miss. Cache miss state is idle.
 
-   // VP output signals, TODO: align or f2 stage?
-   // output PC
-   // output result
-   // output conf
-   // output valid
-   output vp_pkt_t vp_pred_pkt,
-   
-   //
-   // feedback PC
-   // feedback actual
-   // feedback misp
-   // feedback conf
-   // feedback valid
-   input vp_pkt_t vp_update_pkt,
-
    output br_pkt_t i0_brp,           // Instruction 0 branch packet. From Aligner to Decode
    output br_pkt_t i1_brp,           // Instruction 1 branch packet. From Aligner to Decode
 
@@ -319,31 +304,6 @@ module ifu
    // branch predictor
    ifu_bp_ctl bp (.*);
    
-   // value predictor
-// `ifdef VP_ENABLED
-   vp_wrapper #(
-      .P_ALGORITHM      ("BASELINE"), // use dummy logic for testing
-      .P_NUM_PRED       (2),
-      .P_CONF_WIDTH     (`P_CONF_WIDTH),
-      .P_STORAGE_SIZE   (`P_STORAGE_SIZE)
-   ) vp (
-      .fw_pc_f1_i       (ifc_fetch_addr_f1),
-      .fw_valid_f1_i    (ifc_fetch_req_f1), // TODO: 
-      .fw_pc_f2_i       (ifc_fetch_addr_f2),
-      .fw_valid_f2_i    ({&ifc_fetch_val[7:4], &ifc_fetch_val[3:0]}), // TODO: 
-      .fw_gbh_i         (bp.fghr_ns), // TODO: add fghr/fghr_ns output to BP (ifu_bp_ctl.sv)
-      .pred_pc_o        (vp_pred_pkt.pc),
-      .pred_result_o    (vp_pred_pkt.result),
-      .pred_conf_o      (vp_pred_pkt.conf),
-      .pred_valid_o     (vp_pred_pkt.valid),
-      .fb_pc_i          (vp_update_pkt.pc),
-      .fb_actual_i      (vp_update_pkt.actual),
-      .fb_mispredict_i  (vp_update_pkt.misp),
-      .fb_conf_i        (vp_update_pkt.conf),
-      .fb_valid_i       (vp_update_pkt.valid)
-   );
-// `endif
-
    // icache
    ifu_mem_ctl mem_ctl
      (.*,
