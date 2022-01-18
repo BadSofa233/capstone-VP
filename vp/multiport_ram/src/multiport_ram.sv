@@ -20,12 +20,17 @@
 `define P_NUM_BANK 2048
 `endif
 
+`ifndef P_SIM
+`define P_SIM 1
+`endif
+
 module multiport_ram #(
-    parameter P_MEM_DEPTH         = `P_MEM_DEPTH,     // memory depth, accepted: any exponentials of 2
-    parameter P_MEM_WIDTH         = `P_MEM_WIDTH,     // memory width, accepted: 8, 16, or 32
-    parameter P_METHOD            = `P_METHOD,        // multiport method, accepted: "MULTIPUMPED" or "BANKED"
-    parameter P_NUM_BANK          = `P_NUM_BANK,      // number of banks, only used when P_METHOD == "BANKED", accepted: 4
-    localparam LP_INDEX_WIDTH     = $clog2(P_MEM_DEPTH)
+    parameter P_MEM_DEPTH           = `P_MEM_DEPTH,     // memory depth, accepted: any exponentials of 2
+    parameter P_MEM_WIDTH           = `P_MEM_WIDTH,     // memory width, accepted: 8, 16, or 32
+    parameter P_METHOD              = `P_METHOD,        // multiport method, accepted: "MULTIPUMPED" or "BANKED"
+    parameter P_NUM_BANK            = `P_NUM_BANK,      // number of banks, only used when P_METHOD == "BANKED", accepted: 4
+    parameter P_SIM                 = `P_SIM,           // sim or synthesis, accepted: 0 (dual-clock synthesis model), 1 (single-clock behavioral model)
+    localparam LP_INDEX_WIDTH       = $clog2(P_MEM_DEPTH)
 ) (
     // TB_GEN_DEF CLOCK clk_i
     input   logic                                           clk_i,          // main clock
@@ -56,7 +61,64 @@ module multiport_ram #(
 
     generate
     
-        if(P_METHOD == "MULTIPUMPED") begin
+        if(P_SIM == 1) begin // not synthesizable logic, for Verilator simulation only
+            // sim signals
+            logic [P_MEM_WIDTH-1:0]     mem[P_MEM_DEPTH-1:0];
+            logic                       fwda2a;
+            logic                       fwdb2a;
+            logic                       fwda2b;
+            logic                       fwdb2b;
+            logic                       tieoff; // used to tieoff the unused input clk_mp_i so Verilator doesn't complain
+            
+            assign tieoff = clk_mp_i;
+            
+            initial begin
+                for(integer i = 0; i < P_MEM_DEPTH; i = i + 1) begin
+                    mem[i] <= 0;
+                end
+            end
+            
+            // foward enables
+            assign fwda2a = wra_valid_i && wra_addr_i == rda_addr_i;
+            assign fwdb2a = wrb_valid_i && wrb_addr_i == rda_addr_i;
+            assign fwda2b = wra_valid_i && wra_addr_i == rdb_addr_i;
+            assign fwdb2b = wrb_valid_i && wrb_addr_i == rdb_addr_i;
+
+            // port A
+            always @(posedge clk_i) begin
+                if(wra_valid_i) begin
+                    mem[wra_addr_i] <= wra_data_i;
+                end
+                // forward write data
+                if(fwda2a) begin
+                    rda_data_o <= wra_data_i;
+                end
+                else if(fwdb2a) begin
+                    rda_data_o <= wrb_data_i;
+                end
+                else begin
+                    rda_data_o <= mem[rda_addr_i];
+                end
+            end
+            // port B
+            always @(posedge clk_i) begin
+                if(wrb_valid_i) begin
+                    mem[wrb_addr_i] <= wrb_data_i;
+                end
+                // forward write data
+                if(fwda2b) begin
+                    rdb_data_o <= wra_data_i;
+                end
+                else if(fwdb2b) begin
+                    rdb_data_o <= wrb_data_i;
+                end
+                else begin
+                    rdb_data_o <= mem[rdb_addr_i];
+                end
+            end
+        end
+        
+        else if(P_METHOD == "MULTIPUMPED") begin
         
             logic [P_MEM_WIDTH-1:0] mem[P_MEM_DEPTH-1:0];
             initial begin
