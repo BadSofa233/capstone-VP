@@ -37,7 +37,7 @@ cmodel: $(CM_FILES)
 # compiles the RTL design
 verilate: $(SRC_DIR)/$(RTL_FILES) 
 	@printf "\nRunning verilate...\n\n"
-	verilator -Wall --cc $(SRC_DIR)/$(RTL_FILES) $(VERILATOR_COMP_ARGS)
+	verilator --cc $(SRC_DIR)/$(RTL_FILES) $(VERILATOR_COMP_ARGS)
 	$(MAKE) -C obj_dir -j -f V$(MODULE).mk
 
 # remove output
@@ -46,5 +46,5 @@ clean:
 	rm -rf obj_dir/
 	rm -f $(MODULE)_tb_trace.vcd
 	rm -f $(MODULE)_tb.h
-	rm -f $(MODULE)_cmodel.gch
+	rm -f $(MODULE)_cmodel.h.gch
 	rm -f $(MODULE)_cmodel.o
