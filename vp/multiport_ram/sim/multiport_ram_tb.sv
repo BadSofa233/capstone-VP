@@ -49,7 +49,7 @@ module multiport_ram_tb ();
         clk = 0;
         clk_mp = 1;
         for(integer i = 0; i < P_MEM_DEPTH; i = i + 1) begin
-            mem[i] <= 0;
+            mem[i] = 0;
         end
         $display("Seed %d", seed);
     end

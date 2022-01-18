@@ -74,7 +74,7 @@ module multiport_ram #(
             
             initial begin
                 for(integer i = 0; i < P_MEM_DEPTH; i = i + 1) begin
-                    mem[i] <= 0;
+                    mem[i] = 0;
                 end
             end
             
@@ -123,7 +123,7 @@ module multiport_ram #(
             logic [P_MEM_WIDTH-1:0] mem[P_MEM_DEPTH-1:0];
             initial begin
                 for(integer i = 0; i < P_MEM_DEPTH; i = i + 1) begin
-                    mem[i] <= 0;
+                    mem[i] = 0;
                 end
             end
             
