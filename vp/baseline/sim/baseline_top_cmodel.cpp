@@ -70,25 +70,33 @@ void Baseline_top_cmodel::generate_prediction() {
     }
     else { // one prediction per cycle
         // value table lookup, note that there is a 1 cycle RAM read delay
-        uint64_t pred_value_i = last_value_storage[fw_pc_i];
+        uint64_t pred_value = last_value_storage[fw_pc_i % P_STORAGE_SIZE];
 
         // confidence table lookup, 1 cycle delay
-        uint64_t pred_conf_i = conf_storage[fw_pc_i];
+        uint64_t pred_conf = conf_storage[fw_pc_i % P_STORAGE_SIZE];
 
-        // determine if pred_conf_i is saturated
-        unsigned pred_conf_sat_i = (pred_conf_i == (1<<P_CONF_WIDTH)-1);
+        // determine if pred_conf is saturated
+        unsigned pred_conf_sat = (pred_conf == (1<<P_CONF_WIDTH)-1);
 
         // compute pred_result_o
-        pred_result_o = pred_value_i;
+        if(clk_i) {
+            pred_result_o = pred_value;
+        }
         
         // compute pred_conf_o
-        pred_conf_o = pred_conf_sat_i;
+        if(clk_i) {
+            pred_conf_o = pred_conf_sat;
+        }
         
         // compute pred_pc_o
-        pred_pc_o = fw_pc_i;
+        if(clk_i) {
+            pred_pc_o = fw_pc_i;
+        }
         
         // compute pred_valid_o
-        pred_valid_o = fw_valid_i;
+        if(clk_i) {
+            pred_valid_o = fw_valid_i;
+        }
     }
 }
 
@@ -97,12 +105,14 @@ void Baseline_top_cmodel::update_storage() {
     if(P_NUM_PRED == 1) { // single prediction
         // update last value table
         // what happens upon correct prediction? upon misprediction?
-        
+        last_value_storage[fw_pc_0 % P_STORAGE_SIZE] = pred_pc_o;
+        last_value_storage[fw_pc_1 % P_STORAGE_SIZE] = pred_pc_o;
         
         
         // update confidence table
         // what happens upon correct prediction? upon misprediction?
-        
+        conf_storage[fw_pc_0 % P_STORAGE_SIZE] = pred_conf_o;
+        conf_storage[fw_pc_1 % P_STORAGE_SIZE] =pred_conf_o ;
     }
     else { // dual prediction
         // detect conflicts
@@ -112,14 +122,25 @@ void Baseline_top_cmodel::update_storage() {
         
         // what happens when no conflict?
         
+        // compute pred_conf_o
+        if(clk_i) {
+            pred_conf_o = (pred_conf_sat_1 << 1) | pred_conf_sat_0;
+        }
+        
+        // compute pred_pc_o
+        if(clk_i) {
+            pred_pc_o = fw_pc_i;
+        }
         
         // update last value table
         // take misprediction and conflict into account
-        
+        last_value_storage[fw_pc_0 % P_STORAGE_SIZE] = pred_pc_o;
+        last_value_storage[fw_pc_1 % P_STORAGE_SIZE] = pred_pc_o;
         
         
         // update confidence table
         // take misprediction and conflict into account
-        
+        conf_storage[fw_pc_0 % P_STORAGE_SIZE] = pred_conf_o;
+        conf_storage[fw_pc_1 % P_STORAGE_SIZE] = pred_conf_o;
     }
 }
