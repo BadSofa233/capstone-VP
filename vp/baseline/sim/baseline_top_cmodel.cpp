@@ -129,6 +129,8 @@ void Baseline_top_cmodel::update_storage() {
         // detect conflicts (when fb_pc_i LSB 32 and fb_pc_i MSB 32 are the same)
         unsigned fb_pc_0 = (unsigned)fb_pc_i; // read lower 32 bits of fb_pc_i
         unsigned fb_pc_1 = fb_pc_i >> 32; // read higher 32 bits or fb_pc_i
+        unsigned fb_actual_0 = (unsigned)fb_actual_i;
+        unsigned fb_actual_1 = fb_actual_i >> 32;
         bool conflict = fb_pc_0 == fb_pc_1;
         
         // what happens when conflict?
@@ -139,57 +141,50 @@ void Baseline_top_cmodel::update_storage() {
             if(both_correct) [
                 // add 2 to confidence table, store one fb_actual_i
                 uint64_t fb_new_conf_0 = conf_storage[fb_pc_0 % P_STORAGE_SIZE] + 2 < (1 << P_CONF_WIDTH - 1) ?
-                                         conf_storage[fb_pc_0 % P_STORAGE_SIZE] + 2 : (1 << P_CONF_WIDTH - 1);
-                uint64_t fb_new_conf_1 = conf_storage[fb_pc_1 % P_STORAGE_SIZE] + 2 < (1 << P_CONF_WIDTH - 1) ? // Yuhan: no need for 2 new confidences
-                                         conf_storage[fb_pc_1 % P_STORAGE_SIZE] + 2 : (1 << P_CONF_WIDTH - 1);
+                                         conf_storage[fb_pc_0 % P_STORAGE_SIZE] + 2 : (1 << P_CONF_WIDTH - 1); 
+                
                 if(clk_i) {
                     conf_storage[fb_pc_0 % P_STORAGE_SIZE] = fb_new_conf_0; 
                 }
 
                 if(clk_i) {
-                    last_value_storage[fb_pc_0 % P_STORAGE_SIZE] = fb_actual_0; // Yuhan: need to define fb_actual_0 and fb_actual 1
+                    last_value_storage[fb_pc_0 % P_STORAGE_SIZE] = fb_actual_0; 
                 }
-                
-                // Yuhan: when conflict, you don't need two writes, only write once to conf table and value table
             }
             else {
                 // reset confidence counter, store MSB 32 of fb_actual_i
+                if(clk_i) {
+                    conf_storage[fb_pc_0 % P_STORAGE_SIZE] = 0; 
+                }
+
                 if(clk_i) {
                     conf_storage[fb_pc_1 % P_STORAGE_SIZE] = 0; 
                 }
 
                 if(clk_i) {
-                    last_value_storage[fb_pc_1 % P_STORAGE_SIZE] = fb_actual_1; 
+                    last_value_storage[fb_pc_0 % P_STORAGE_SIZE] = fb_actual_0 >> 32; 
+                }
+
+                if(clk_i) {
+                    last_value_storage[fb_pc_1 % P_STORAGE_SIZE] = fb_actual_1 >> 32; 
                 }
             }
         }
         else {
             if(clk_i) {
-                last_value_storage[fb_pc_0 % P_STORAGE_SIZE] = fb_actual_0; 
-            }
-
-            if(clk_i) {
-                last_value_storage[fb_pc_1 % P_STORAGE_SIZE] = fb_actual_1; 
-            }
-
-            if(clk_i) {
-                uint64_t fb_new_conf_0 = fb_mispredict_0 ? 0 : // Yuhan: move conf table update into this if{} block
+                last_value_storage[fb_pc_0 % P_STORAGE_SIZE] = fb_actual_0 >> 32; 
+                uint64_t fb_new_conf_0 = fb_mispredict_0 ? 0 : 
                                 conf_storage[fb_pc_0 % P_STORAGE_SIZE] + 1 < (1 << P_CONF_WIDTH - 1) ? 
                                 conf_storage[fb_pc_0 % P_STORAGE_SIZE] + 1 : (1 << P_CONF_WIDTH - 1);
+                conf_storage[fb_pc_0 % P_STORAGE_SIZE] = fb_new_conf_0;
             }
 
-            if(clk_i) { // Yuhan: move conf table update into this if{} block
+            if(clk_i) {
+                last_value_storage[fb_pc_1 % P_STORAGE_SIZE] = fb_actual_1 >> 32; 
                 uint64_t fb_new_conf_1 = fb_mispredict_1 ? 0 : 
                                 conf_storage[fb_pc_1 % P_STORAGE_SIZE] + 1 < (1 << P_CONF_WIDTH - 1) ? 
                                 conf_storage[fb_pc_1 % P_STORAGE_SIZE] + 1 : (1 << P_CONF_WIDTH - 1);
-            }
-            
-            if(clk_i) {
-                conf_storage[fb_pc_0 % P_STORAGE_SIZE] = fb_new_conf_0; 
-            }
-
-            if(clk_i) {
-                conf_storage[fb_pc_1 % P_STORAGE_SIZE] = fb_new_conf_1; 
+                conf_storage[fb_pc_1 % P_STORAGE_SIZE] = fb_new_conf_1;
             }
         }        
     }
