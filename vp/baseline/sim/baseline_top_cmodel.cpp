@@ -106,14 +106,14 @@ void Baseline_top_cmodel::update_storage() {
         // update last value table
         // what happens upon correct prediction? upon misprediction?
         // last_value_storage[fw_pc_0 % P_STORAGE_SIZE] = pred_pc_o; // you should use the feedback interface (fb_*) instead of forward input (fw_*) or prediction output (pred_*)
-        last_value_storage[fb_pc_i % P_STORAGE_SIZE] = fb_actual_i; 
+        last_value_storage[fb_pc_i % P_STORAGE_SIZE] = fb_actual_i; // Yuhan: clk here
         
         // update confidence table
         // what happens upon correct prediction? upon misprediction?
         // upon correct prediction, add 1 to the confidence of that PC until saturation
         // upon misprediction, reset confidence count of that PC
         // conf_storage[fw_pc_0 % P_STORAGE_SIZE] = pred_conf_o; // use fb_*
-        uint64_t fb_new_conf = fb_mispredict_i ? 0 : 
+        uint64_t fb_new_conf = fb_mispredict_i ? 0 : // Yuhan: clk here
                                conf_storage[fb_pc_i % P_STORAGE_SIZE] + 1 < (1 << P_CONF_WIDTH - 1) ? 
                                conf_storage[fb_pc_i % P_STORAGE_SIZE] + 1 : (1 << P_CONF_WIDTH - 1);
         if(clk_i) {
@@ -128,29 +128,30 @@ void Baseline_top_cmodel::update_storage() {
         
         // what happens when conflict?
         if(conflict) {
+            // Yuhan: fb_mispredict_i is two bits
             unsigned fb_mispredict_0 = (unsigned)fb_mispredict_i; // read lower 32 bits of fb_mispredict_i
             unsigned fb_mispredict_1 = fb_mispredict_i >> 32; // read higher 32 bits or fb_mispredict_i
             bool both_correct = fb_mispredict_0 == 0 && fb_mispredict_0 == fb_mispredict_1; // see if fb_mispredict_i is 0
             if(both_correct) [
                 // add 2 to confidence table, store one fb_actual_i
-                uint64_t fb_new_conf = conf_storage[fb_pc_i % P_STORAGE_SIZE] + 2;
-                conf_storage[fb_pc_i % P_STORAGE_SIZE] = fb_new_conf;
-                last_value_storage[fb_pc_i % P_STORAGE_SIZE] = fb_actual_i;
+                uint64_t fb_new_conf = conf_storage[fb_pc_i % P_STORAGE_SIZE] + 2; // Yuhan: use fb_pc_0/1, detect saturation
+                conf_storage[fb_pc_i % P_STORAGE_SIZE] = fb_new_conf; // Yuhan: use fb_pc_0/1, clk
+                last_value_storage[fb_pc_i % P_STORAGE_SIZE] = fb_actual_i; // Yuhan: use fb_actual_0/1, clk
             }
             else {
                 // reset confidence counter, store MSB 32 of fb_actual_i
-                conf_storage[fb_pc_i % P_STORAGE_SIZE] = 0;
-                last_value_storage[fb_pc_i % P_STORAGE_SIZE] = fb_actual_i >> 32; 
+                conf_storage[fb_pc_i % P_STORAGE_SIZE] = 0; // Yuhan: fb_pc_0/1, clk
+                last_value_storage[fb_pc_i % P_STORAGE_SIZE] = fb_actual_i >> 32; // Yuhan: fb_pc_0/1, clk
             }
         }
         else {
-            last_value_storage[fb_pc_i % P_STORAGE_SIZE] = fb_actual_i; 
+            last_value_storage[fb_pc_i % P_STORAGE_SIZE] = fb_actual_i; // Yuhan: fb_pc_0/1, clk
 
-            uint64_t fb_new_conf = fb_mispredict_i ? 0 : 
+            uint64_t fb_new_conf = fb_mispredict_i ? 0 : // Yuhan: use fb_*_0/1, clk
                                 conf_storage[fb_pc_i % P_STORAGE_SIZE] + 1 < (1 << P_CONF_WIDTH - 1) ? 
                                 conf_storage[fb_pc_i % P_STORAGE_SIZE] + 1 : (1 << P_CONF_WIDTH - 1);
             if(clk_i) {
-                conf_storage[fb_pc_i % P_STORAGE_SIZE] = fb_new_conf;
+                conf_storage[fb_pc_i % P_STORAGE_SIZE] = fb_new_conf; // Yuhan: use fb_*_0/1
             }
         }
         
