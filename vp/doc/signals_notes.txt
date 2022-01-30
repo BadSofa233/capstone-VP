@@ -10,9 +10,14 @@ ifc_fetch_addr_f2               ifu.sv                          ifc_fetch_addr_f
 ifu_fetch_val                   ifu.sv                          The valid qualifier of the fetch address ifc_fetch_addr_f2
 ifu_i0_pc                       ifu.sv                          Indicates the PC of the current instruction at align stage
 ifu_i0_pc4                      ifu.sv                          Indicates the PC in the align stage is 4 bytes
-
+pc_[01]_in                      dec_ib_ctl.sv                   The next address to be issued from instruction buffer to the decoder\
+fghr_ns                         ifu_bp_ctl.sv                   Lab16 P15, global history used for gshare BP
 
 DEC STAGE
+dec_i0_decode_d                 dec.
+i0_block_d
+i0_mul_block_d
+i0_rs[12]_class_d               dec_decode_ctl.sv               The type of source (mul/load/secondary/alu) the dependent Rs needs
 i0_result_e3_final              dec_decode_ctl.sv               Lab11 P?, final result from E3 stage
 i0_result_e4_final              dec_decode_ctl.sv               Lab11 P?, final result from E4 stage
 i0_result_wb                    dec_decode_ctl.sv               Lab12 P?, I0 result at writeback stage
@@ -24,4 +29,11 @@ div_rs[12]_d                    exu.sv                          Lab12 P?, operan
 i0_e1_ctl_en                    exu.sv                          Lab12 P9, ALU 0 pipeline enable signal
 dec_i0_alu_decode_d             dec_decode_ctl.sv               Lab12 P10, ALU 0 pipe valid signal
 i0_result_wb_raw                dec_decode_ctl.sv               Lab12 P15, way 0 result at wb stage
-fghr_ns                         ifu_bp_ctl.sv                   Lab16 P15, global history used for gshare BP    `
+
+EXU STAGE
+exu_i[01]_flush_lower_e4        exu.sv                          Flush signal computed at secondary alu
+exu_i[01]_flush_upper_e1        exu.sv                          Flush signal computed at primary ALU at e1
+
+ADDITIONAL NOTES
+PMU means performance monitor unit
+TLU means trap logic unit

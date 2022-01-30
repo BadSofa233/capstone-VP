@@ -30,7 +30,7 @@ module baseline_top #(
                                                         // estimated probability of error <= 1/(2^P_CONF_WIDTH)
                                                         // default to 8
                                                 
-    parameter   P_NUM_PRED      = `P_NUM_PRED           // max number of predictions that can be made every cycle
+    parameter   P_NUM_PRED      = `P_NUM_PRED,          // max number of predictions that can be made every cycle
 
     // localparams are like 'const' in C++. They cannot be modified elsewhere
     localparam  P_INDEX_WIDTH   = $clog2(P_STORAGE_SIZE)// number of LSBs of pc used to index the table
@@ -77,8 +77,8 @@ module baseline_top #(
     logic                                                   fb_conf_add2;
     logic [P_NUM_PRED-1:0]                                  fb_conf_reset;
     
-    logic [P_NUM_PRED-1:0][P_CONF_WIDTH-1:0]                fb_old_conf;
-    logic [P_NUM_PRED-1:0][P_CONF_WIDTH-1:0]                fb_new_conf;
+    logic [P_NUM_PRED-1:0][P_CONF_WIDTH:0]                fb_old_conf;
+    logic [P_NUM_PRED-1:0][P_CONF_WIDTH:0]                fb_new_conf;
     
 
     // the 'initial' block of a Verilog file gets executed once at the start
@@ -163,7 +163,7 @@ module baseline_top #(
             
             multiport_ram #(
                 .P_MEM_DEPTH        (P_STORAGE_SIZE),
-                .P_MEM_WIDTH        (P_CONF_WIDTH),
+                .P_MEM_WIDTH        (P_CONF_WIDTH+1),
                 .P_SIM              (1),
                 .P_METHOD           ("MULTIPUMPED")
             ) confidence_table (
@@ -186,11 +186,11 @@ module baseline_top #(
         
         for(genvar p = 0; p < P_NUM_PRED; p = p + 1) begin
             // take MSB for pred_conf_o
-            assign pred_conf_o[p] = fb_old_conf[p][P_CONF_WIDTH-1];
+            assign pred_conf_o[p] = fb_old_conf[p][P_CONF_WIDTH];
             // generate new confidence
             assign fb_new_conf[p] = fb_conf_incr[p]  ? fb_old_conf[p] + 1'b1 : 
-                                    fb_conf_add2     ? fb_old_conf[p] + P_CONF_WIDTH'(2) : 
-                                    fb_conf_reset[p] ? {P_CONF_WIDTH{1'b0}} : fb_old_conf[p];
+                                    fb_conf_add2     ? fb_old_conf[p] + (P_CONF_WIDTH+1)'(2) : 
+                                    fb_conf_reset[p] ? '0 : fb_old_conf[p];
         end
         
         // update control unit
@@ -198,7 +198,7 @@ module baseline_top #(
             assign fb_wen        = rst_i ? 1'b0 : fb_valid_i;
             assign fb_conf_add2  = 1'b0;                                            // not possible when P_NUM_PRED == 1
             assign fb_conf_incr  = rst_i ? 1'b0 : (~fb_mispredict_i && ~fb_conf_i); // increment confidence only when no saturation && no misprediction
-            assign fb_conf_reset = rst_i ? 1'b0 : fb_mispredict_i;                 // reset confidence when there's misprediction
+            assign fb_conf_reset = rst_i ? 1'b0 : fb_mispredict_i;                  // reset confidence when there's misprediction
         end
         else if (P_NUM_PRED == 2) begin 
             logic fb_conflict;
