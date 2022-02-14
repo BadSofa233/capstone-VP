@@ -50,18 +50,18 @@ module baseline_top #(
     
     // forward input interface signals
     // TB_GEN_DEF INTERFACE fw DIR I CTRL VALID
-    input   logic [P_NUM_PRED-1:0][31:0]                    fw_pc_i,        // current instruction address
+    input   logic [P_NUM_PRED-1:0][31:1]                    fw_pc_i,        // current instruction address
     input   logic [P_NUM_PRED-1:0]                          fw_valid_i,     // current instruction address valid qualifier
     // forward prediction interface signals
     // TB_GEN_DEF INTERFACE pred DIR O CTRL VALID
-    output  logic [P_NUM_PRED-1:0][31:0]                    pred_pc_o,      // forward input pc delay matched, used for update
+    output  logic [P_NUM_PRED-1:0][31:1]                    pred_pc_o,      // forward input pc delay matched, used for update
     output  logic [P_NUM_PRED-1:0][31:0]                    pred_result_o,  // prediction result
     output  logic [P_NUM_PRED-1:0]                          pred_conf_o,    // prediction result's confidence, 1 if saturated, 0 else
     output  logic [P_NUM_PRED-1:0]                          pred_valid_o,   // qualifies the prediction result
 
     // validation interface (feedback) signals
     // TB_GEN_DEF INTERFACE fb DIR I CTRL VALID
-    input   logic [P_NUM_PRED-1:0][31:0]                    fb_pc_i,        // address of execution result feedback
+    input   logic [P_NUM_PRED-1:0][31:1]                    fb_pc_i,        // address of execution result feedback
     input   logic [P_NUM_PRED-1:0][31:0]                    fb_actual_i,    // true execution result of the instruction
     input   logic [P_NUM_PRED-1:0]                          fb_mispredict_i,// indicates misprediction
     input   logic [P_NUM_PRED-1:0]                          fb_conf_i,      // indicates if the prediction confidence was saturated
@@ -108,7 +108,7 @@ module baseline_top #(
             ) value_table (
                 .clk_i              (clk_i),
                 .clk_mp_i           (clk_ram_i),
-                .rda_addr_i         (fw_pc_i[P_INDEX_WIDTH-1:0]),
+                .rda_addr_i         (fw_pc_i[P_INDEX_WIDTH:1]),
                 .rdb_addr_i         ({P_INDEX_WIDTH{1'b0}}),
                 .rda_data_o         (pred_result_o),
                 .rdb_data_o         (),
@@ -128,7 +128,7 @@ module baseline_top #(
             ) confidence_table (
                 .clk_i              (clk_i),
                 .clk_mp_i           (clk_ram_i),
-                .rda_addr_i         (fw_pc_i[P_INDEX_WIDTH-1:0]),
+                .rda_addr_i         (fw_pc_i[P_INDEX_WIDTH:1]),
                 .rdb_addr_i         ({P_INDEX_WIDTH{1'b0}}),
                 .rda_data_o         (fb_old_conf),
                 .rdb_data_o         (),
@@ -149,14 +149,14 @@ module baseline_top #(
             ) value_table (
                 .clk_i              (clk_i),
                 .clk_mp_i           (clk_ram_i),
-                .rda_addr_i         (fw_pc_i[0][P_INDEX_WIDTH-1:0]),
-                .rdb_addr_i         (fw_pc_i[1][P_INDEX_WIDTH-1:0]),
+                .rda_addr_i         (fw_pc_i[0][P_INDEX_WIDTH:1]),
+                .rdb_addr_i         (fw_pc_i[1][P_INDEX_WIDTH:1]),
                 .rda_data_o         (pred_result_o[0]),
                 .rdb_data_o         (pred_result_o[1]),
-                .wra_addr_i         (fb_pc_i[0][P_INDEX_WIDTH-1:0]),
+                .wra_addr_i         (fb_pc_i[0][P_INDEX_WIDTH:1]),
                 .wra_data_i         (fb_actual_i[0]),
                 .wra_valid_i        (fb_wen[0]),
-                .wrb_addr_i         (fb_pc_i[1][P_INDEX_WIDTH-1:0]),
+                .wrb_addr_i         (fb_pc_i[1][P_INDEX_WIDTH:1]),
                 .wrb_data_i         (fb_actual_i[1]),
                 .wrb_valid_i        (fb_wen[1])
             );
@@ -169,14 +169,14 @@ module baseline_top #(
             ) confidence_table (
                 .clk_i              (clk_i),
                 .clk_mp_i           (clk_ram_i),
-                .rda_addr_i         (fw_pc_i[0][P_INDEX_WIDTH-1:0]),
-                .rdb_addr_i         (fw_pc_i[1][P_INDEX_WIDTH-1:0]),
+                .rda_addr_i         (fw_pc_i[0][P_INDEX_WIDTH:1]),
+                .rdb_addr_i         (fw_pc_i[1][P_INDEX_WIDTH:1]),
                 .rda_data_o         (fb_old_conf[0]),
                 .rdb_data_o         (fb_old_conf[1]),
-                .wra_addr_i         (fb_pc_i[0][P_INDEX_WIDTH-1:0]),
+                .wra_addr_i         (fb_pc_i[0][P_INDEX_WIDTH:1]),
                 .wra_data_i         (fb_new_conf[0]),
                 .wra_valid_i        (fb_wen[0]),
-                .wrb_addr_i         (fb_pc_i[1][P_INDEX_WIDTH-1:0]),
+                .wrb_addr_i         (fb_pc_i[1][P_INDEX_WIDTH:1]),
                 .wrb_data_i         (fb_new_conf[1]),
                 .wrb_valid_i        (fb_wen[1])
             );
