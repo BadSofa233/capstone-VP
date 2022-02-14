@@ -345,6 +345,7 @@ module dec_decode_ctl
 
    logic               i1_load_block_d;
    logic               i1_mul_block_d;
+   logic               i1_mul_block_d_final;
    logic               i1_load2_block_d;
    logic               i1_mul2_block_d;
    logic               mul_decode_d;
@@ -383,6 +384,7 @@ module dec_decode_ctl
    logic [31:0] i0_result_e4_final, i1_result_e4_final;
    logic        i0_load_block_d;
    logic        i0_mul_block_d;
+   logic        i0_mul_block_d_final;
    logic [3:0]  i0_rs1_depth_d, i0_rs2_depth_d;
    logic [3:0]  i1_rs1_depth_d, i1_rs2_depth_d;
 
@@ -598,8 +600,8 @@ module dec_decode_ctl
 `endif
 
 // value prediction
-   vp_fw_pkt_t vp_p_d, vp_p_e1, vp_p_e2, vp_p_e3, vp_p_wb;
-   vp_fw_pkt_t vp_p_e1_in, vp_p_e2_in, vp_p_e3_in, vp_p_wb_in;
+   vp_fw_pkt_t vp_p_d, vp_p_e1, vp_p_e2, vp_p_e3, vp_p_e4, vp_p_wb;
+   vp_fw_pkt_t vp_p_e1_in, vp_p_e2_in, vp_p_e3_in, vp_p_e4_in, vp_p_wb_in;
    logic i0_use_vp, i1_use_vp;
    // logic i0_vp_used_d, i0_vp_used_e1, i0_vp_used_e2, i0_vp_used_e3, i0_vp_used_e4, i0_vp_used_wb; 
    // logic i1_vp_used_d, i1_vp_used_e1, i1_vp_used_e2, i1_vp_used_e3, i1_vp_used_e4, i1_vp_used_wb; 
@@ -636,9 +638,9 @@ module dec_decode_ctl
    // vp e1
    always_comb begin
       vp_p_e1_in           = vp_p_e1;
-      vp_p_e1.i0_result    = dec_i0_vp_result_e1;
+      vp_p_e1_in.i0_result = dec_i0_vp_result_e1;
       vp_p_e1_in.i0_valid  = vp_p_e1.i0_valid & ~flush_final_e3; // need flush wb here?
-      vp_p_e1.i1_result    = dec_i1_vp_result_e1;
+      vp_p_e1_in.i1_result = dec_i1_vp_result_e1;
       vp_p_e1_in.i1_valid  = vp_p_e1.i1_valid & ~flush_final_e3; // need flush wb here?
       vp_p_e1_in.i0_used   = // vp_p_e1.i0_used | // already used
                              ( (i0_rs1_depend_i0_e1 | i0_rs2_depend_i0_e1 | i1_rs1_depend_i0_e1 | i1_rs2_depend_i0_e1) & // decode stage i0/1 rs1/2 depends on this

@@ -12,6 +12,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+`include "vp_defines.vh"
 package swerv_types;
 
 // performance monitor stuff
@@ -131,12 +132,12 @@ typedef struct packed {
 typedef struct packed {
                        logic [31:0]              i0_result;
                        logic [31:1]              i0_pc; // debug
-                       logic [`P_CONF_WIDTH-1:0] i0_conf;
+                       logic                     i0_conf;
                        logic                     i0_valid;
                        logic                     i0_used;
                        logic [31:0]              i1_result;
                        logic [31:1]              i1_pc; // debug
-                       logic [`P_CONF_WIDTH-1:0] i1_conf;
+                       logic                     i1_conf;
                        logic                     i1_valid;
                        logic                     i1_used;
                       } vp_fw_pkt_t;

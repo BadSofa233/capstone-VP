@@ -34,6 +34,8 @@ module dec
    input logic free_clk,
    input logic active_clk,
 
+   // input logic clk_ram,
+
 
    output logic       dec_pause_state_cg,           // pause state for clock-gating
 
@@ -121,11 +123,11 @@ module dec
 
    input br_pkt_t i0_brp,              // branch packet
    input br_pkt_t i1_brp,
-   
-   input logic [31:0] ifu_i0_vp_result,             // i0 vp result
-   input logic [31:0] ifu_i1_vp_result,             // i1 vp result
-   input logic        ifu_i0_vp_conf,               // i0 vp confidence
-   input logic        ifu_i1_vp_conf,               // i1 vp confidence
+
+   // input logic [31:0] dec_i0_vp_result_e1,            // i0 vp result
+   // input logic [31:0] dec_i1_vp_result_e1,            // i1 vp result
+   // input logic        dec_i0_vp_conf_d,               // i0 vp confidence
+   // input logic        dec_i1_vp_conf_d,               // i1 vp confidence
 
    input    lsu_error_pkt_t lsu_error_pkt_dc3, // LSU exception/error packet
    input logic         lsu_single_ecc_error_incr,    // Increment the counter for Single ECC error
@@ -509,12 +511,15 @@ module dec
    br_pkt_t dec_i0_brp;
    br_pkt_t dec_i1_brp;
    
+   // VP
    logic [31:1]               dec_i0_ib_pc_aln; // next PC address for dec, used for VP
    logic [31:1]               dec_i1_ib_pc_aln; // TODO: hook ib_ctl's pc[01]_in to these
    logic [31:0]               dec_i0_vp_result_e1;
    logic [31:0]               dec_i1_vp_result_e1;
    logic                      dec_i0_vp_conf_d;
    logic                      dec_i1_vp_conf_d;
+   // logic                      i0_use_vp;
+   // logic                      i1_use_vp;
 
    assign clk_override = dec_tlu_dec_clk_override;
 
@@ -533,16 +538,32 @@ module dec
    assign wr_bank_id  = '0;
 
    // VP unit
+   logic clk_ram; // TODO: move this to input
+   assign clk_ram = 1'b0;
+   // temp, debug
+   logic i1_fb_conf, i0_fb_conf;
+   logic i1_decode_e1, i0_decode_e1;
+   logic [31:1] i1_pc_e1;
+   logic [31:1] i0_pc_e1;
+   always @(posedge clk) begin
+      i1_fb_conf <= dec_i1_vp_conf_d;
+      i0_fb_conf <= dec_i0_vp_conf_d;
+      i1_decode_e1 <= dec_i1_decode_d;
+      i0_decode_e1 <= dec_i0_decode_d;
+      i1_pc_e1 <= dec_i1_pc_d;
+      i0_pc_e1 <= dec_i0_pc_d;
+   end
+   
    vp_wrapper #(
       .P_ALGORITHM      ("BASELINE"),
-      .P_CONF_WIDTH     (2),
+      .P_CONF_WIDTH     (1),
       .P_STORAGE_SIZE   (32)
    ) dec_vp_ctl (
       .clk_i            (clk),
-      .rst_i            (rst_l),
+      .rst_i            (~rst_l),
       .clk_ram_i        (clk_ram),
       .fw_pc_aln_i      ({dec_i1_ib_pc_aln, dec_i0_ib_pc_aln}),
-      .fw_gbh_aln_i     ('0),
+      .fw_gbh_aln_i     (64'b0),
       .fw_valid_aln_i   (2'b11),
       .pred_conf_d_o    ({dec_i1_vp_conf_d, dec_i0_vp_conf_d}),
       .pred_valid_d_o   (), // TODO: delete?
@@ -550,12 +571,12 @@ module dec
       .pred_result_e1_o ({dec_i1_vp_result_e1, dec_i0_vp_result_e1}),
       .pred_conf_e1_o   (), // TODO: delete?
       .pred_valid_e1_o  (), // TODO: delete?
-      .pred_en_e1_i     ({i1_use_vp, i0_use_vp}),
-      .fb_pc_i          ({dec_i1_pc_d, dec_i0_pc_d}), // do loopback for debug, TODO: change to fb packet
-      .fb_actual_i      ({dec_i1_pc_d, dec_i0_pc_d}), // for debug
-      .fb_mispredict_i  ('0), // for debug
-      .fb_conf_i        ({dec_i1_vp_conf_d, dec_i0_vp_conf_d}),
-      .fb_valid_i       ({dec_i1_decode_d, dec_i0_decode_d})
+      // .pred_en_e1_i     ({i1_use_vp, i0_use_vp}),
+      .fb_pc_i          ({i1_pc_e1, i0_pc_e1}), // do loopback for debug, TODO: change to fb packet
+      .fb_actual_i      ({1'b0, i1_pc_e1, 1'b0, i0_pc_e1}), // for debug
+      .fb_mispredict_i  ({dec_i1_vp_result_e1 != {1'b0, i1_pc_e1}, dec_i0_vp_result_e1 != {1'b0, i0_pc_e1}}), // for debug
+      .fb_conf_i        ({i1_fb_conf, i0_fb_conf}),
+      .fb_valid_i       ({i1_decode_e1, i0_decode_e1})
    );
 
 
