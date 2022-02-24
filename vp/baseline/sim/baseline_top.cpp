@@ -11,9 +11,9 @@
 
 int debug_test(Baseline_top_tb & dut, int P_CONF_WIDTH); 
 int confidence_test(Baseline_top_tb & dut, int pc, int cycles); 
-int conflict_test(Baseline_top_tb & dut, int pc, int cycles); 
+int conflict_test(Baseline_top_tb & dut, int pc, int cycles, int P_CONF_WIDTH); 
 int random_test(Baseline_top_tb & dut, int cycles); 
-void build_confidence(Baseline_top_tb & dut, uint64_t pc, uint64_t fb_value);
+void build_confidence(Baseline_top_tb & dut, uint64_t pc, uint64_t fb_value, int P_CONF_WIDTH);
 
 int main(int argc, char **argv, char **env) {
     
@@ -80,9 +80,9 @@ int main(int argc, char **argv, char **env) {
     // TODO: testcases
     // debug_test(dut, P_CONF_WIDTH);
     
-    // confidence_test(dut, pc, cycles);
+    confidence_test(dut, pc, cycles);
     
-    conflict_test(dut, pc, cycles);
+    conflict_test(dut, pc, cycles, P_CONF_WIDTH);
     
     // random_test(dut, cycles);
     
@@ -106,7 +106,7 @@ int confidence_test(Baseline_top_tb & dut, int pc, int cycles) {
     for(int i = 0; i < cycles; i++) {
         rand_result = rand();
         rand_pred = rand() & 1;
-        pc_in = rand_pred ? (uint64_t)pc << 32 : pc; // left shift PC if it's pred 1
+        pc_in = rand_pred ? (uint64_t)pc << 31 : pc; // left shift PC if it's pred 1
         
         // printf("rand_pred %d, pc_in 0x%lX\n", rand_pred, pc_in);
         
@@ -131,7 +131,7 @@ int confidence_test(Baseline_top_tb & dut, int pc, int cycles) {
     rand_result = rand();
     while(dut.read_pred_conf_o(false) == 0) { // test confidence build up
         rand_pred = rand() & 1;
-        pc_in = rand_pred ? (uint64_t)pc << 32 : pc; // left shift PC if it's pred 1
+        pc_in = rand_pred ? (uint64_t)pc << 31 : pc; // left shift PC if it's pred 1
         dut.write_fw_pc_i(pc_in);
         dut.write_fw_valid_i(0b11);
         
@@ -151,7 +151,7 @@ int confidence_test(Baseline_top_tb & dut, int pc, int cycles) {
     }
     for(int i = 0; i < cycles; i++) { // test maintaining the confidence
         rand_pred = rand() & 1;
-        pc_in = rand_pred ? (uint64_t)pc << 32 : pc; // left shift PC if it's pred 1
+        pc_in = rand_pred ? (uint64_t)pc << 31 : pc; // left shift PC if it's pred 1
         dut.write_fw_pc_i(pc_in);
         dut.write_fw_valid_i(0b11);
         
@@ -175,7 +175,7 @@ int confidence_test(Baseline_top_tb & dut, int pc, int cycles) {
     for(int i = 0; i < cycles; i++) {
         rand_result = rand();
         rand_pred = rand() & 1;
-        pc_in = rand_pred ? (uint64_t)pc << 32 : pc; // left shift PC if it's pred 1
+        pc_in = rand_pred ? (uint64_t)pc << 31 : pc; // left shift PC if it's pred 1
         dut.write_fw_pc_i(pc_in);
         dut.write_fw_valid_i(0b11);
         
@@ -202,14 +202,14 @@ int confidence_test(Baseline_top_tb & dut, int pc, int cycles) {
 }
 
 // testing conflict address, randomized value, misp, and valid
-int conflict_test(Baseline_top_tb & dut, int pc, int cycles) {
+int conflict_test(Baseline_top_tb & dut, int pc, int cycles, int P_CONF_WIDTH) {
     uint64_t actual_value0 = rand(), actual_value1 = actual_value0;
     uint64_t rand_result = (actual_value1 << 32) | actual_value0;
-    uint64_t pc_in = ((uint64_t)pc << 32) | (uint64_t)pc;
+    uint64_t pc_in = ((uint64_t)pc << 31) | (uint64_t)pc;
     int cycle;
     
     // confidence build-up, both correct
-    build_confidence(dut, pc_in, rand_result);
+    build_confidence(dut, pc_in, rand_result, P_CONF_WIDTH);
     
     // two concurrent mispredictions
     actual_value0 = ~actual_value0 & 0xFFFFFFFF;
@@ -228,7 +228,7 @@ int conflict_test(Baseline_top_tb & dut, int pc, int cycles) {
     dut.tick();
 
     // assert confidence being 0
-    if(dut.read_pred_conf_o(false)) {
+    if(dut.read_pred_conf_o(false) & (1<<P_CONF_WIDTH | 1<<(2*P_CONF_WIDTH+1))) {
         printf("ERROR: confidence not reset after two concurrent mispredictions.\n");
         exit(1);
     }
@@ -239,7 +239,7 @@ int conflict_test(Baseline_top_tb & dut, int pc, int cycles) {
     }
     
     // build confidence again
-    build_confidence(dut, pc_in, rand_result);
+    build_confidence(dut, pc_in, rand_result, P_CONF_WIDTH);
     
     // pred0 misprediction pred1 correct
     actual_value0 = ~actual_value0 & 0xFFFFFFFF;
@@ -258,7 +258,7 @@ int conflict_test(Baseline_top_tb & dut, int pc, int cycles) {
     dut.tick();
 
     // assert confidence being 0
-    if(dut.read_pred_conf_o(false)) {
+    if(dut.read_pred_conf_o(false) & (1<<P_CONF_WIDTH | 1<<(2*P_CONF_WIDTH+1))) {
         printf("ERROR: confidence not reset after conflict with pred0 misp.\n");
         exit(1);
     }
@@ -273,7 +273,7 @@ int conflict_test(Baseline_top_tb & dut, int pc, int cycles) {
     actual_value0 = ~actual_value0 & 0xFFFFFFFF;
     actual_value1 = actual_value1 & 0xFFFFFFFF;
     rand_result = (actual_value1 << 32) | actual_value0;
-    build_confidence(dut, pc_in, rand_result);
+    build_confidence(dut, pc_in, rand_result, P_CONF_WIDTH);
     
     // pred0 misprediction pred1 correct
     actual_value0 = actual_value0 & 0xFFFFFFFF;
@@ -292,7 +292,7 @@ int conflict_test(Baseline_top_tb & dut, int pc, int cycles) {
     dut.tick();
 
     // assert confidence being 0
-    if(dut.read_pred_conf_o(false)) {
+    if(dut.read_pred_conf_o(false) & (1<<P_CONF_WIDTH | 1<<(2*P_CONF_WIDTH+1))) {
         printf("ERROR: confidence not reset after conflict with pred1 misp.\n");
         exit(1);
     }
@@ -330,10 +330,10 @@ int debug_test(Baseline_top_tb & dut, int P_CONF_WIDTH) {
         // we check the signals within the DUT so no need for extra work here
     }
     
-    dut.write_fw_pc_i(pc << 32);
+    dut.write_fw_pc_i(pc << 31);
     dut.write_fw_valid_i(0b11);
     dut.tick();
-    dut.write_fb_pc_i(pc << 32);
+    dut.write_fb_pc_i(pc << 31);
     dut.write_fb_mispredict_i((dut.read_pred_result_o(false) >> 32) != 0xFFFF); // assume execution result is 0xFFFF
     dut.write_fb_actual_i(0xFFFF00000000);
     dut.write_fb_valid_i(0b10);
@@ -345,7 +345,7 @@ int debug_test(Baseline_top_tb & dut, int P_CONF_WIDTH) {
     return 0;
 }
 
-void build_confidence(Baseline_top_tb & dut, uint64_t pc, uint64_t fb_value) {
+void build_confidence(Baseline_top_tb & dut, uint64_t pc, uint64_t fb_value, int P_CONF_WIDTH) {
     int cycle = 0;
     // printf("pc 0x%lX\n", pc);
     do {
@@ -360,6 +360,6 @@ void build_confidence(Baseline_top_tb & dut, uint64_t pc, uint64_t fb_value) {
         dut.write_fb_valid_i(0b11);
         dut.write_fb_conf_i(dut.read_pred_conf_o(false));
         cycle++;
-    } while(dut.read_pred_conf_o(false) == 0);
+    } while((dut.read_pred_conf_o(false) & (1<<P_CONF_WIDTH | 1<<(2*P_CONF_WIDTH+1))) == 0);
     printf("INFO: conflict test confidence high in %d cycles.\n", cycle);
 }

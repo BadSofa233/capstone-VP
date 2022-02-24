@@ -123,8 +123,8 @@ void Baseline_top_cmodel::update_storage() {
         // conf_storage[fw_pc_0 % P_STORAGE_SIZE] = pred_conf_o; // use fb_*
         if(clk_i) {
             uint64_t fb_new_conf = fb_mispredict_i ? 0 : 
-                                   conf_storage[fb_pc_i % P_STORAGE_SIZE] + 1 < (1 << P_CONF_WIDTH) ? 
-                                   conf_storage[fb_pc_i % P_STORAGE_SIZE] + 1 : (1 << P_CONF_WIDTH);
+                                   fb_conf_i + 1 < (1 << P_CONF_WIDTH) ? 
+                                   fb_conf_i + 1 : (1 << P_CONF_WIDTH);
             if(fb_valid_i) {
                 conf_storage[fb_pc_i % P_STORAGE_SIZE] = fb_new_conf;
             }
@@ -136,6 +136,10 @@ void Baseline_top_cmodel::update_storage() {
         unsigned fb_pc_1            = fb_pc_i >> 32; // read higher 32 bits or fb_pc_i
         unsigned fb_actual_0        = (unsigned)fb_actual_i;
         unsigned fb_actual_1        = fb_actual_i >> 32;
+        unsigned fb_conf_0          = fb_conf_i & ((2 << P_CONF_WIDTH) - 1);
+        unsigned fb_conf_1          = fb_conf_i >> (P_CONF_WIDTH + 1);
+        unsigned fb_conf_sat_0      = fb_conf_0 >> P_CONF_WIDTH;
+        unsigned fb_conf_sat_1      = fb_conf_1 >> P_CONF_WIDTH;
         unsigned fb_mispredict_0    = (unsigned)fb_mispredict_i; // read lower 32 bits of fb_mispredict_i
         unsigned fb_mispredict_1    = fb_mispredict_i >> 32; // read higher 32 bits or fb_mispredict_i
         unsigned fb_valid_0         = fb_valid_i & 1;
@@ -150,8 +154,7 @@ void Baseline_top_cmodel::update_storage() {
             bool both_correct = (fb_mispredict_i & 0b11) == 0; // check if fb_mispredict_i is 0
             if(both_correct) {
                 // add 2 to confidence table, store one fb_actual_i
-                fb_new_conf_0 = conf_storage[fb_pc_0 % P_STORAGE_SIZE] + 2 < (1 << P_CONF_WIDTH) ?
-                                conf_storage[fb_pc_0 % P_STORAGE_SIZE] + 2 : (1 << P_CONF_WIDTH); 
+                fb_new_conf_0 = fb_conf_sat_0 ? fb_conf_0 + 2 : fb_conf_0; 
                 
                 if(clk_i) {
                     conf_storage[fb_pc_1 % P_STORAGE_SIZE] = fb_new_conf_0; 
@@ -171,8 +174,7 @@ void Baseline_top_cmodel::update_storage() {
                 if(fb_valid_0) {
                     last_value_storage[fb_pc_0 % P_STORAGE_SIZE] = fb_actual_0; 
                     fb_new_conf_0 = fb_mispredict_0 ? 0 : 
-                                    conf_storage[fb_pc_0 % P_STORAGE_SIZE] + 1 < (1 << P_CONF_WIDTH) ? 
-                                    conf_storage[fb_pc_0 % P_STORAGE_SIZE] + 1 : (1 << P_CONF_WIDTH);
+                                    fb_conf_sat_0   ? fb_conf_0 + 1 : fb_conf_0; 
                     conf_storage[fb_pc_0 % P_STORAGE_SIZE] = fb_new_conf_0;
                 }
             }
@@ -181,8 +183,7 @@ void Baseline_top_cmodel::update_storage() {
                 if(fb_valid_1) {
                     last_value_storage[fb_pc_1 % P_STORAGE_SIZE] = fb_actual_1; 
                     fb_new_conf_1 = fb_mispredict_1 ? 0 : 
-                                    conf_storage[fb_pc_1 % P_STORAGE_SIZE] + 1 < (1 << P_CONF_WIDTH) ? 
-                                    conf_storage[fb_pc_1 % P_STORAGE_SIZE] + 1 : (1 << P_CONF_WIDTH);
+                                    fb_conf_sat_1   ? fb_conf_1 + 1 : fb_conf_1;
                     conf_storage[fb_pc_1 % P_STORAGE_SIZE] = fb_new_conf_1;
                 }
             }

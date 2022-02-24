@@ -16,6 +16,10 @@
 `define P_NUM_PRED 2
 `endif
 
+`ifndef P_SIM
+`define P_SIM 1
+`endif
+
 module baseline_top #(
     // input parameters that define widths of interfaces
     // parameters are like template parameters in C++ and 'generic' in VHDL
@@ -56,7 +60,7 @@ module baseline_top #(
     // TB_GEN_DEF INTERFACE pred DIR O CTRL VALID
     output  logic [P_NUM_PRED-1:0][31:1]                    pred_pc_o,      // forward input pc delay matched, used for update
     output  logic [P_NUM_PRED-1:0][31:0]                    pred_result_o,  // prediction result
-    output  logic [P_NUM_PRED-1:0]                          pred_conf_o,    // prediction result's confidence, 1 if saturated, 0 else
+    output  logic [P_NUM_PRED-1:0][P_CONF_WIDTH:0]          pred_conf_o,    // prediction result's confidence, 1 if saturated, 0 else
     output  logic [P_NUM_PRED-1:0]                          pred_valid_o,   // qualifies the prediction result
 
     // validation interface (feedback) signals
@@ -64,7 +68,7 @@ module baseline_top #(
     input   logic [P_NUM_PRED-1:0][31:1]                    fb_pc_i,        // address of execution result feedback
     input   logic [P_NUM_PRED-1:0][31:0]                    fb_actual_i,    // true execution result of the instruction
     input   logic [P_NUM_PRED-1:0]                          fb_mispredict_i,// indicates misprediction
-    input   logic [P_NUM_PRED-1:0]                          fb_conf_i,      // indicates if the prediction confidence was saturated
+    input   logic [P_NUM_PRED-1:0][P_CONF_WIDTH:0]          fb_conf_i,      // indicates if the prediction confidence was saturated
     input   logic [P_NUM_PRED-1:0]                          fb_valid_i      // valid qualifier of feedback interface
 );
 
@@ -73,11 +77,12 @@ module baseline_top #(
     // logic [P_STORAGE_SIZE-1:0][P_CONF_WIDTH-1:0]            confidence_table;
     
     logic [P_NUM_PRED-1:0]                                  fb_wen;
+    logic [P_NUM_PRED-1:0]                                  fb_conf_sat;
     logic [P_NUM_PRED-1:0]                                  fb_conf_incr;
     logic                                                   fb_conf_add2;
     logic [P_NUM_PRED-1:0]                                  fb_conf_reset;
     
-    logic [P_NUM_PRED-1:0][P_CONF_WIDTH:0]                fb_old_conf;
+    // logic [P_NUM_PRED-1:0][P_CONF_WIDTH:0]                fb_old_conf;
     logic [P_NUM_PRED-1:0][P_CONF_WIDTH:0]                fb_new_conf;
     
 
@@ -103,7 +108,7 @@ module baseline_top #(
             multiport_ram #(
                 .P_MEM_DEPTH        (P_STORAGE_SIZE),
                 .P_MEM_WIDTH        (32),
-                .P_SIM              (1),
+                .P_SIM              (`P_SIM),
                 .P_METHOD           ("MULTIPUMPED")
             ) value_table (
                 .clk_i              (clk_i),
@@ -122,15 +127,15 @@ module baseline_top #(
             
             multiport_ram #(
                 .P_MEM_DEPTH        (P_STORAGE_SIZE),
-                .P_MEM_WIDTH        (P_CONF_WIDTH),
-                .P_SIM              (1),
+                .P_MEM_WIDTH        (P_CONF_WIDTH + 1),
+                .P_SIM              (`P_SIM),
                 .P_METHOD           ("MULTIPUMPED")
             ) confidence_table (
                 .clk_i              (clk_i),
                 .clk_mp_i           (clk_ram_i),
                 .rda_addr_i         (fw_pc_i[P_INDEX_WIDTH:1]),
                 .rdb_addr_i         ({P_INDEX_WIDTH{1'b0}}),
-                .rda_data_o         (fb_old_conf),
+                .rda_data_o         (pred_conf_o),
                 .rdb_data_o         (),
                 .wra_addr_i         (fb_pc_i[P_INDEX_WIDTH-1:0]),
                 .wra_data_i         (fb_new_conf),
@@ -144,7 +149,7 @@ module baseline_top #(
             multiport_ram #(
                 .P_MEM_DEPTH        (P_STORAGE_SIZE),
                 .P_MEM_WIDTH        (32),
-                .P_SIM              (1),
+                .P_SIM              (`P_SIM),
                 .P_METHOD           ("MULTIPUMPED")
             ) value_table (
                 .clk_i              (clk_i),
@@ -163,16 +168,16 @@ module baseline_top #(
             
             multiport_ram #(
                 .P_MEM_DEPTH        (P_STORAGE_SIZE),
-                .P_MEM_WIDTH        (P_CONF_WIDTH+1),
-                .P_SIM              (1),
+                .P_MEM_WIDTH        (P_CONF_WIDTH + 1),
+                .P_SIM              (`P_SIM),
                 .P_METHOD           ("MULTIPUMPED")
             ) confidence_table (
                 .clk_i              (clk_i),
                 .clk_mp_i           (clk_ram_i),
                 .rda_addr_i         (fw_pc_i[0][P_INDEX_WIDTH:1]),
                 .rdb_addr_i         (fw_pc_i[1][P_INDEX_WIDTH:1]),
-                .rda_data_o         (fb_old_conf[0]),
-                .rdb_data_o         (fb_old_conf[1]),
+                .rda_data_o         (pred_conf_o[0]),
+                .rdb_data_o         (pred_conf_o[1]),
                 .wra_addr_i         (fb_pc_i[0][P_INDEX_WIDTH:1]),
                 .wra_data_i         (fb_new_conf[0]),
                 .wra_valid_i        (fb_wen[0]),
@@ -185,19 +190,21 @@ module baseline_top #(
         // confidence unit
         
         for(genvar p = 0; p < P_NUM_PRED; p = p + 1) begin
+            // check fb_conf saturation
+            assign fb_conf_sat[p] = fb_conf_i[p][P_CONF_WIDTH];
             // take MSB for pred_conf_o
-            assign pred_conf_o[p] = fb_old_conf[p][P_CONF_WIDTH];
+            // assign pred_conf_o[p] = fb_old_conf[p][P_CONF_WIDTH];
             // generate new confidence
-            assign fb_new_conf[p] = fb_conf_incr[p]  ? fb_old_conf[p] + 1'b1 : 
-                                    fb_conf_add2     ? fb_old_conf[p] + (P_CONF_WIDTH+1)'(2) : 
-                                    fb_conf_reset[p] ? '0 : fb_old_conf[p];
+            assign fb_new_conf[p] = fb_conf_incr[p]  ? fb_conf_i[p] + 1'b1 : 
+                                    fb_conf_add2     ? fb_conf_i[p] + (P_CONF_WIDTH+1)'(2) : 
+                                    fb_conf_reset[p] ? '0 : fb_conf_i[p];
         end
         
         // update control unit
         if(P_NUM_PRED == 1) begin
             assign fb_wen        = rst_i ? 1'b0 : fb_valid_i;
             assign fb_conf_add2  = 1'b0;                                            // not possible when P_NUM_PRED == 1
-            assign fb_conf_incr  = rst_i ? 1'b0 : (~fb_mispredict_i && ~fb_conf_i); // increment confidence only when no saturation && no misprediction
+            assign fb_conf_incr  = rst_i ? 1'b0 : (~fb_mispredict_i && ~fb_conf_sat); // increment confidence only when no saturation && no misprediction
             assign fb_conf_reset = rst_i ? 1'b0 : fb_mispredict_i;                  // reset confidence when there's misprediction
         end
         else if (P_NUM_PRED == 2) begin 
@@ -208,7 +215,7 @@ module baseline_top #(
             assign fb_both_correct = ~(|fb_mispredict_i);                                           // when no misprediction (fb_mispredict_i == 0), two predictions are both correct
             assign fb_wen          = (rst_i | ~(|fb_valid_i)) ? 2'b00 : fb_conflict ? 2'b10 : fb_valid_i;              // when conflict, merge fb[0] to fb[1], only write fb[1]
             assign fb_conf_add2    = rst_i ? 1'b0 : fb_conflict && fb_both_correct;                 // if the predictions were both correct, add 2 to confidence counter
-            assign fb_conf_incr    = rst_i || fb_conflict ? 2'b00 :(~fb_mispredict_i & ~fb_conf_i); // increment confidence only when: // no conflict && no saturation && no misprediction
+            assign fb_conf_incr    = rst_i || fb_conflict ? 2'b00 :(~fb_mispredict_i & ~fb_conf_sat); // increment confidence only when: // no conflict && no saturation && no misprediction
             assign fb_conf_reset   = rst_i                           ? 2'b00 :                      // reset confidence when there's misprediction or
                                      fb_conflict && !fb_both_correct ? 2'b10 : fb_mispredict_i;     // there's conflict and not both correct (there must be at least one wrong)
         end

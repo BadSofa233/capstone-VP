@@ -30,10 +30,10 @@ public:
     uint64_t                        fw_valid_i;     // current instruction address valid qualifier
 
     // validation interface (feedback) signals
-    uint64_t                        fb_pc_i;        // address of execution result feedback
-    uint64_t                        fb_actual_i;    // true execution result of the instruction
-    uint64_t                        fb_mispredict_i;// indicates misprediction
-    uint64_t                        fb_conf_i;      // indicates if the prediction confidence was saturated
+    uint64_t                        fb_pc_i;         // address of execution result feedback
+    uint64_t                        fb_actual_i;     // true execution result of the instruction
+    uint64_t                        fb_mispredict_i; // indicates misprediction
+    uint64_t                        fb_conf_i;       // indicates if the prediction confidence was saturated
     uint64_t                        fb_valid_i;      // valid qualifier of feedback interface
 
     // -------- output signals -------- //
