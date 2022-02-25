@@ -20,21 +20,21 @@ module vp_wrapper #(
     input   logic [1:0]                                     fw_valid_aln_i, //Fetch address qualifier 1 cycle before the Decode stage (Align stage)
     
     // forward prediction interface signals
-    output  logic [1:0]                                     pred_conf_d_o,      //Indicates if the value predictor is confident to provide a prediction
+    output  logic [1:0][P_CONF_WIDTH:0]                     pred_conf_d_o,      //Indicates if the value predictor is confident to provide a prediction
     output  logic [1:0]                                     pred_valid_d_o,     //Determines if the prediction output is valid and usable. The same as fw_valid_aln_i delay matched with prediction result output path
-    output  logic [1:0][31:1]                               pred_pc_e1_o,       //The PC address associated with the prediction at E1 stage
+    // output  logic [1:0][31:1]                               pred_pc_e1_o,       //The PC address associated with the prediction at E1 stage
     output  logic [1:0][31:0]                               pred_result_e1_o,   //The actual prediction result for the instruction address pred_pc_d_o
-    output  logic [1:0]                                     pred_conf_e1_o,     //Indicates if the prediction pred_result_e1_o is confident 
-    output  logic [1:0]                                     pred_valid_e1_o,    //Indicates if the prediction pred_result_e1_o is usable, delayed from fw_valid_aln_i                                                  
+    // output  logic [1:0][P_CONF_WIDTH:0]                     pred_conf_e1_o,     //Indicates if the prediction pred_result_e1_o is confident 
+    // output  logic [1:0]                                     pred_valid_e1_o,    //Indicates if the prediction pred_result_e1_o is usable, delayed from fw_valid_aln_i                                                  
 
     // prediction enable Input interface signals
-    input   logic [1:0]                                     pred_en_e1_i,       //Output enables of the predicted result 
+    // input   logic [1:0]                                     pred_en_e1_i,       //Output enables of the predicted result 
     
     // validation interface (feedback) signals
     input   logic [1:0][31:1]                               fb_pc_i,            // address of execution result feedback
     input   logic [1:0][31:0]                               fb_actual_i,        // true execution result of the instruction
     input   logic [1:0]                                     fb_mispredict_i,    // indicates misprediction
-    input   logic [1:0]                                     fb_conf_i,          // indicates if the prediction confidence was saturated
+    input   logic [1:0][P_CONF_WIDTH:0]                     fb_conf_i,          // indicates if the prediction confidence was saturated
     input   logic [1:0]                                     fb_valid_i          // valid qualifier of feedback interface
 );
 
@@ -71,8 +71,8 @@ module vp_wrapper #(
         
             logic [1:0][31:0]    pred_result_d;
             logic [1:0][31:1]    pred_pc_d;
-            logic [1:0]          pred_conf_d;
-            logic [1:0]          pred_valid_d;
+            // logic [1:0]          pred_conf_d;
+            // logic [1:0]          pred_valid_d;
             
             baseline_top #(
                 .P_STORAGE_SIZE     (P_STORAGE_SIZE),
@@ -86,8 +86,8 @@ module vp_wrapper #(
                 .fw_valid_i         (fw_valid_aln_i),
                 .pred_pc_o          (pred_pc_d),
                 .pred_result_o      (pred_result_d),
-                .pred_conf_o        (pred_conf_d),
-                .pred_valid_o       (pred_valid_d),
+                .pred_conf_o        (pred_conf_d_o),
+                .pred_valid_o       (pred_valid_d_o),
                 .fb_pc_i            (fb_pc_i),
                 .fb_actual_i        (fb_actual_i),
                 .fb_mispredict_i    (fb_mispredict_i),
@@ -95,14 +95,14 @@ module vp_wrapper #(
                 .fb_valid_i         (fb_valid_i)
             );
             
-            assign pred_conf_d_o    = pred_conf_d;
-            assign pred_valid_d_o   = pred_valid_d;
+            // assign pred_conf_d_o    = pred_conf_d;
+            // assign pred_valid_d_o   = pred_valid_d;
             
             always @(posedge clk_i) begin // TODO: no need for enable, just go
                 // if(|pred_en_e1_i) begin
-                    pred_pc_e1_o        <= pred_pc_d;
-                    pred_conf_e1_o      <= pred_conf_d;
-                    pred_valid_e1_o     <= pred_valid_d;
+                    // pred_pc_e1_o        <= pred_pc_d;
+                    // pred_conf_e1_o      <= pred_conf_d;
+                    // pred_valid_e1_o     <= pred_valid_d;
                     pred_result_e1_o    <= pred_result_d;
                 // end
             end
