@@ -124,10 +124,14 @@ module dec
    input br_pkt_t i0_brp,              // branch packet
    input br_pkt_t i1_brp,
 
-   // input logic [31:0] dec_i0_vp_result_e1,            // i0 vp result
-   // input logic [31:0] dec_i1_vp_result_e1,            // i1 vp result
-   // input logic        dec_i0_vp_conf_d,               // i0 vp confidence
-   // input logic        dec_i1_vp_conf_d,               // i1 vp confidence
+// vp
+   output logic         dec_vp_mul_way_e1,                  // i0 rs1 in d use vp
+   output logic         dec_mul_rs1_use_vp_e1,              // i0 rs2 in d use vp
+   output logic         dec_mul_rs2_use_vp_e1,              // i1 rs1 in d use vp
+   output logic [31:0]  dec_i0_vp_rs1_val_e1,               // selected rs1 vp result for i0 in d
+   output logic [31:0]  dec_i0_vp_rs2_val_e1,               // selected rs2 vp result for i0 in d
+   output logic [31:0]  dec_i1_vp_rs1_val_e1,               // selected rs1 vp result for i1 in d
+   output logic [31:0]  dec_i1_vp_rs2_val_e1,               // selected rs2 vp result for i1 in d
 
    input    lsu_error_pkt_t lsu_error_pkt_dc3, // LSU exception/error packet
    input logic         lsu_single_ecc_error_incr,    // Increment the counter for Single ECC error
@@ -516,10 +520,15 @@ module dec
    logic [31:1]               dec_i1_ib_pc_aln; // TODO: hook ib_ctl's pc[01]_in to these
    logic [31:0]               dec_i0_vp_result_e1;
    logic [31:0]               dec_i1_vp_result_e1;
-   logic                      dec_i0_vp_conf_d;
-   logic                      dec_i1_vp_conf_d;
-   // logic                      i0_use_vp;
-   // logic                      i1_use_vp;
+   logic [`P_CONF_WIDTH:0]    dec_i0_vp_conf_cnt_d;
+   logic [`P_CONF_WIDTH:0]    dec_i1_vp_conf_cnt_d;
+   logic [`P_CONF_WIDTH:0]    dec_i0_vp_conf_cnt_e4;
+   logic [`P_CONF_WIDTH:0]    dec_i1_vp_conf_cnt_e4;
+
+   logic                      i0_vp_misp_flush_e4;
+   logic                      i1_vp_misp_flush_e4;
+   logic [31:1]               i0_vp_flush_path_e4; // flush path when vp i0 misp
+   logic [31:1]               i1_vp_flush_path_e4; // flush path when vp i1 misp
 
    assign clk_override = dec_tlu_dec_clk_override;
 
@@ -540,24 +549,25 @@ module dec
    // VP unit
    logic clk_ram; // TODO: move this to input
    assign clk_ram = 1'b0;
-   // temp, debug
-   logic i1_fb_conf, i0_fb_conf;
-   logic i1_decode_e1, i0_decode_e1;
-   logic [31:1] i1_pc_e1;
-   logic [31:1] i0_pc_e1;
-   always @(posedge clk) begin
-      i1_fb_conf <= dec_i1_vp_conf_d;
-      i0_fb_conf <= dec_i0_vp_conf_d;
-      i1_decode_e1 <= dec_i1_decode_d;
-      i0_decode_e1 <= dec_i0_decode_d;
-      i1_pc_e1 <= dec_i1_pc_d;
-      i0_pc_e1 <= dec_i0_pc_d;
-   end
+   vp_fb_pkt_t vp_fb_p_e4;
+   logic [31:0] i1_result, i0_result;
+   logic [31:0] i1_cnt, i0_cnt;
+   // provide wrong prediction results after conf
+   // always @(posedge clk) begin
+      // if(dec_i1_pc_d[31:1] == 31'h2) begin
+         // i1_cnt = i1_cnt + 1'b1;
+      // end
+      // if(dec_i0_pc_d[31:1] == 31'h2) begin
+         // i0_cnt = i0_cnt + 1'b1;
+      // end
+   // end
+   // assign dec_i1_vp_result_e1 = (i1_cnt == 2**`P_CONF_WIDTH + 2) ? 0 : i1_result;
+   // assign dec_i0_vp_result_e1 = (i0_cnt == 2**`P_CONF_WIDTH + 2) ? 0 : i0_result;
    
    vp_wrapper #(
       .P_ALGORITHM      ("BASELINE"),
-      .P_CONF_WIDTH     (1),
-      .P_STORAGE_SIZE   (32)
+      .P_CONF_WIDTH     (`P_CONF_WIDTH),
+      .P_STORAGE_SIZE   (128)
    ) dec_vp_ctl (
       .clk_i            (clk),
       .rst_i            (~rst_l),
@@ -565,18 +575,19 @@ module dec
       .fw_pc_aln_i      ({dec_i1_ib_pc_aln, dec_i0_ib_pc_aln}),
       .fw_gbh_aln_i     (64'b0),
       .fw_valid_aln_i   (2'b11),
-      .pred_conf_d_o    ({dec_i1_vp_conf_d, dec_i0_vp_conf_d}),
-      .pred_valid_d_o   (), // TODO: delete?
-      .pred_pc_e1_o     (), // TODO: delete?
+      .pred_conf_d_o    ({dec_i1_vp_conf_cnt_d, dec_i0_vp_conf_cnt_d}),
+      // .pred_valid_d_o   (), // TODO: delete?
+      // .pred_pc_e1_o     (), // TODO: delete?
       .pred_result_e1_o ({dec_i1_vp_result_e1, dec_i0_vp_result_e1}),
-      .pred_conf_e1_o   (), // TODO: delete?
-      .pred_valid_e1_o  (), // TODO: delete?
+      // .pred_result_e1_o ({i1_result, i0_result}),
+      // .pred_conf_e1_o   (), // TODO: delete?
+      // .pred_valid_e1_o  (), // TODO: delete?
       // .pred_en_e1_i     ({i1_use_vp, i0_use_vp}),
-      .fb_pc_i          ({i1_pc_e1, i0_pc_e1}), // do loopback for debug, TODO: change to fb packet
-      .fb_actual_i      ({1'b0, i1_pc_e1, 1'b0, i0_pc_e1}), // for debug
-      .fb_mispredict_i  ({dec_i1_vp_result_e1 != {1'b0, i1_pc_e1}, dec_i0_vp_result_e1 != {1'b0, i0_pc_e1}}), // for debug
-      .fb_conf_i        ({i1_fb_conf, i0_fb_conf}),
-      .fb_valid_i       ({i1_decode_e1, i0_decode_e1})
+      .fb_pc_i          ({dec_tlu_i1_pc_e4, dec_tlu_i0_pc_e4}), // do loopback for debug, TODO: change to fb packet
+      .fb_actual_i      ({i1_result_e4_eff, i0_result_e4_eff}),
+      .fb_mispredict_i  ({vp_fb_p_e4.i1_misp, vp_fb_p_e4.i0_misp}),
+      .fb_conf_i        ({dec_i1_vp_conf_cnt_e4, dec_i0_vp_conf_cnt_e4}),
+      .fb_valid_i       ({vp_fb_p_e4.i1_valid, vp_fb_p_e4.i0_valid})
    );
 
 

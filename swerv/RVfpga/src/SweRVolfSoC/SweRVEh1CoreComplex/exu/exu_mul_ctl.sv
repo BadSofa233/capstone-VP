@@ -28,6 +28,11 @@ module exu_mul_ctl
 
    input logic [31:0]  lsu_result_dc3,   // Load result used in E1 bypass
 
+   input logic [31:0]  rs1_vp_result_e1, // VP result for rs1
+   input logic [31:0]  rs2_vp_result_e1, // VP result for rs2
+   input logic         rs1_use_vp_e1,     // use VP result for rs1
+   input logic         rs2_use_vp_e1,     // use VP result for rs2
+
    input logic         freeze,           // Pipeline freeze
 
    input mul_pkt_t     mp,               // valid, rs1_sign, rs2_sign, low, load_mul_rs1_bypass_e1, load_mul_rs2_bypass_e1
@@ -50,6 +55,10 @@ module exu_mul_ctl
    logic signed [32:0]  a_ff_e2, b_ff_e2;
    logic        [63:0]  prod_e3;
    logic                low_e1, low_e2, low_e3;
+
+// VP
+   // logic                rs1_use_vp_e1;
+   // logic                rs2_use_vp_e1;
 
 
    // --------------------------- Clock gating   ----------------------------------
@@ -77,6 +86,9 @@ module exu_mul_ctl
    rvdff_fpga  #(1)  ld_rs1_byp_e1_ff (.*, .din(mp.load_mul_rs1_bypass_e1), .dout(load_mul_rs1_bypass_e1), .clk(exu_mul_c1_e1_clk), .clken(mul_c1_e1_clken), .rawclk(clk));
    rvdff_fpga  #(1)  ld_rs2_byp_e1_ff (.*, .din(mp.load_mul_rs2_bypass_e1), .dout(load_mul_rs2_bypass_e1), .clk(exu_mul_c1_e1_clk), .clken(mul_c1_e1_clken), .rawclk(clk));
 
+   // rvdff_fpga  #(1)  ld_rs1_byp_e1_ff (.*, .din(rs1_use_vp_d), .dout(rs1_use_vp_e1), .clk(exu_mul_c1_e1_clk), .clken(mul_c1_e1_clken), .rawclk(clk));
+   // rvdff_fpga  #(1)  ld_rs2_byp_e1_ff (.*, .din(rs2_use_vp_d), .dout(rs2_use_vp_e1), .clk(exu_mul_c1_e1_clk), .clken(mul_c1_e1_clken), .rawclk(clk));
+
    rvdffe  #(32) a_e1_ff          (.*, .din(a[31:0]),                   .dout(a_ff_e1[31:0]),          .en(mul_c1_e1_clken));
    rvdffe  #(32) b_e1_ff          (.*, .din(b[31:0]),                   .dout(b_ff_e1[31:0]),          .en(mul_c1_e1_clken));
 
@@ -84,8 +96,8 @@ module exu_mul_ctl
 
    // --------------------------- E1 Logic Stage ----------------------------------
 
-   assign a_e1[31:0]             = (load_mul_rs1_bypass_e1)  ?  lsu_result_dc3[31:0]  :  a_ff_e1[31:0];
-   assign b_e1[31:0]             = (load_mul_rs2_bypass_e1)  ?  lsu_result_dc3[31:0]  :  b_ff_e1[31:0];
+   assign a_e1[31:0]             = (load_mul_rs1_bypass_e1) ? lsu_result_dc3[31:0] : rs1_use_vp_e1 ? rs1_vp_result_e1[31:0] : a_ff_e1[31:0];
+   assign b_e1[31:0]             = (load_mul_rs2_bypass_e1) ? lsu_result_dc3[31:0] : rs2_use_vp_e1 ? rs2_vp_result_e1[31:0] : b_ff_e1[31:0];
 
    assign rs1_neg_e1             =  rs1_sign_e1 & a_e1[31];
    assign rs2_neg_e1             =  rs2_sign_e1 & b_e1[31];

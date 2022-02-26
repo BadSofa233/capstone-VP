@@ -67,11 +67,31 @@ module dec_decode_ctl
    input br_pkt_t dec_i0_brp,                         // branch packet
    input br_pkt_t dec_i1_brp,
 
-   input logic [31:0] dec_i0_vp_result_e1,            // i0 vp result
-   input logic [31:0] dec_i1_vp_result_e1,            // i1 vp result
-   input logic        dec_i0_vp_conf_d,               // i0 vp confidence
-   input logic        dec_i1_vp_conf_d,               // i1 vp confidence
+// vp
+   input  logic [31:0]            dec_i0_vp_result_e1,   // i0 vp result
+   input  logic [31:0]            dec_i1_vp_result_e1,   // i1 vp result
+   input  logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_d,  // i0 vp confidence decode
+   input  logic [`P_CONF_WIDTH:0] dec_i1_vp_conf_cnt_d,  // i1 vp confidence decode
+   output logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_e4, // i0 vp confidence e4
+   output logic [`P_CONF_WIDTH:0] dec_i1_vp_conf_cnt_e4, // i1 vp confidence e4
 
+   output logic         dec_vp_mul_way_e1,                  // i0 rs1 in d use vp
+   output logic         dec_mul_rs1_use_vp_e1,              // i0 rs2 in d use vp
+   output logic         dec_mul_rs2_use_vp_e1,              // i1 rs1 in d use vp
+   output logic [31:0]  dec_i0_vp_rs1_val_e1,               // selected rs1 vp result for i0 in d
+   output logic [31:0]  dec_i0_vp_rs2_val_e1,               // selected rs2 vp result for i0 in d
+   output logic [31:0]  dec_i1_vp_rs1_val_e1,               // selected rs1 vp result for i1 in d
+   output logic [31:0]  dec_i1_vp_rs2_val_e1,               // selected rs2 vp result for i1 in d
+   // flush
+   output logic         i0_vp_misp_flush_e4,                // flush pipeline due to vp mispredictions in i0
+   output logic         i1_vp_misp_flush_e4,                // flush pipeline due to vp mispredictions in i1
+   output logic [31:1]  i0_vp_flush_path_e4,                // flush path when vp i0 misp
+   output logic [31:1]  i1_vp_flush_path_e4,                // flush path when vp i1 misp
+   // update
+   output vp_fb_pkt_t   vp_fb_p_e4,                         // vp update control packet
+   // output logic [31:0]  i0_result_e4_final, 
+   // output logic [31:0]  i1_result_e4_final,
+   
    input logic [15:0] ifu_illegal_inst,               // 16b illegal inst from aligner
 
    input logic [31:1] dec_i0_pc_d,                    // pc
@@ -344,7 +364,11 @@ module dec_decode_ctl
    logic               flush_lower_wb;
 
    logic               i1_load_block_d;
-   logic               i1_mul_block_d;
+   // logic               i1_mul_block_d;
+   logic               i1_rs1_mul_block_d;
+   logic               i1_rs2_mul_block_d;
+   logic               i1_rs1_mul_block_d_vp;
+   logic               i1_rs2_mul_block_d_vp;
    logic               i1_mul_block_d_final;
    logic               i1_load2_block_d;
    logic               i1_mul2_block_d;
@@ -383,7 +407,12 @@ module dec_decode_ctl
    logic        i0_div_decode_d;
    logic [31:0] i0_result_e4_final, i1_result_e4_final;
    logic        i0_load_block_d;
-   logic        i0_mul_block_d;
+   // logic        i0_mul_block_d;
+   logic        i0_rs1_mul_block_d;
+   logic        i0_rs2_mul_block_d;
+   logic        i0_rs1_mul_block_d_vp;
+   logic        i0_rs2_mul_block_d_vp;
+   
    logic        i0_mul_block_d_final;
    logic [3:0]  i0_rs1_depth_d, i0_rs2_depth_d;
    logic [3:0]  i1_rs1_depth_d, i1_rs2_depth_d;
@@ -599,42 +628,80 @@ module dec_decode_ctl
    assign disable_secondary        = dec_tlu_sec_alu_disable;
 `endif
 
-// value prediction
+// vp
+   // logic dec_vp_target_i0_d, dec_vp_target_i0_e1;
+   // logic dec_vp_target_i1_d, dec_vp_target_i1_e1;
+   // logic [`P_CONF_WIDTH:0] i0_conf_cnt_d, i1_conf_cnt_d;
    vp_fw_pkt_t vp_p_d, vp_p_e1, vp_p_e2, vp_p_e3, vp_p_e4, vp_p_wb;
-   vp_fw_pkt_t vp_p_e1_in, vp_p_e2_in, vp_p_e3_in, vp_p_e4_in, vp_p_wb_in;
-   logic i0_use_vp, i1_use_vp;
+   logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_e1, dec_i1_vp_conf_cnt_e1;
+   logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_e2, dec_i1_vp_conf_cnt_e2;
+   logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_e3, dec_i1_vp_conf_cnt_e3;
+   // logic [`P_CONF_WIDTH:0] i0_vp_conf_cnt_e4, i1_vp_conf_cnt_e4; 
+   vp_fw_pkt_t vp_p_e1_in, vp_p_e2_in, vp_p_e3_in, vp_p_e4_in, vp_p_wb_in; // TODO: need vp_p_wb?
+   // logic dec_i0_rs1_use_vp, dec_i0_rs2_use_vp;
+   // logic dec_i1_rs1_use_vp, dec_i1_rs2_use_vp;
    // logic i0_vp_used_d, i0_vp_used_e1, i0_vp_used_e2, i0_vp_used_e3, i0_vp_used_e4, i0_vp_used_wb; 
    // logic i1_vp_used_d, i1_vp_used_e1, i1_vp_used_e2, i1_vp_used_e3, i1_vp_used_e4, i1_vp_used_wb; 
-   vp_fb_pkt_t vp_fb_p_wb;
-   logic i0_vp_avail_e1_e2, i1_vp_avail_e1_e2;
+   // vp_fb_pkt_t vp_fb_p_e4;
+   logic vp_avail_e1_e2;
+   logic dec_i0_rs1_use_vp;                  // i0 rs1 in d use vp
+   logic dec_i0_rs2_use_vp;                  // i0 rs2 in d use vp
+   logic dec_i1_rs1_use_vp;                  // i1 rs1 in d use vp
+   logic dec_i1_rs2_use_vp;                  // i1 rs2 in d use vp
+   logic i0_rs1_vp_avail_e1_e2, i0_rs2_vp_avail_e1_e2, i1_rs1_vp_avail_e1_e2, i1_rs2_vp_avail_e1_e2;
+   logic vp_used;
+   assign vp_avail_e1_e2 = (vp_p_e1.i0_valid & vp_p_e1.i0_conf) | 
+                           (vp_p_e1.i1_valid & vp_p_e1.i1_conf) | 
+                           (vp_p_e2.i0_valid & vp_p_e2.i0_conf) | 
+                           (vp_p_e2.i1_valid & vp_p_e2.i1_conf);
 
-   assign i0_use_vp = i0_mul_block_d & i0_vp_avail_e1_e2;
-   assign i1_use_vp = i1_mul_block_d & i1_vp_avail_e1_e2;
+   assign dec_i0_rs1_use_vp = i0_rs1_mul_block_d & i0_dp.mul & i0_rs1_vp_avail_e1_e2;
+   assign dec_i0_rs2_use_vp = i0_rs2_mul_block_d & i0_dp.mul & i0_rs2_vp_avail_e1_e2;
+   assign dec_i1_rs1_use_vp = i1_rs1_mul_block_d & i1_dp.mul & i1_rs1_vp_avail_e1_e2;
+   assign dec_i1_rs2_use_vp = i1_rs2_mul_block_d & i1_dp.mul & i1_rs2_vp_avail_e1_e2;
+   assign vp_used = dec_i0_rs1_use_vp | dec_i0_rs2_use_vp | dec_i1_rs1_use_vp | dec_i1_rs2_use_vp;
+   
+   assign dec_i0_vp_rs1_val_e1 = i0_rs1_depend_i0_e1 ? dec_i0_vp_result_e1 : 
+                                 i0_rs1_depend_i1_e1 ? dec_i1_vp_result_e1 :
+                                 i0_rs1_depend_i0_e2 ? vp_p_e2.i0_result : vp_p_e2.i1_result;
+                                 // i0_rs1_depend_i1_e2 ? vp_p_e2.i1_result;
+   assign dec_i0_vp_rs2_val_e1 = i0_rs2_depend_i0_e1 ? dec_i0_vp_result_e1 : 
+                                 i0_rs2_depend_i1_e1 ? dec_i1_vp_result_e1 :
+                                 i0_rs2_depend_i0_e2 ? vp_p_e2.i0_result : vp_p_e2.i1_result;
+                                 // i0_rs2_depend_i1_e2 ? vp_p_e2.i1_result;
+   assign dec_i1_vp_rs1_val_e1 = i1_rs1_depend_i0_e1 ? dec_i0_vp_result_e1 : 
+                                 i1_rs1_depend_i1_e1 ? dec_i1_vp_result_e1 :
+                                 i1_rs1_depend_i0_e2 ? vp_p_e2.i0_result : vp_p_e2.i1_result;
+                                 // i1_rs1_depend_i1_e2 ? vp_p_e2.i1_result;
+   assign dec_i1_vp_rs2_val_e1 = i1_rs2_depend_i0_e1 ? dec_i0_vp_result_e1 : 
+                                 i1_rs2_depend_i1_e1 ? dec_i1_vp_result_e1 :
+                                 i1_rs2_depend_i0_e2 ? vp_p_e2.i0_result : vp_p_e2.i1_result;
+                                 // i1_rs2_depend_i1_e2 ? vp_p_e2.i1_result;
 
+   assign dec_vp_mul_way_e1 = vp_p_e1.mul_way;
+   assign dec_mul_rs1_use_vp_e1 = vp_p_e1.mul_rs1_use_vp;
+   assign dec_mul_rs2_use_vp_e1 = vp_p_e1.mul_rs2_use_vp;
+   
    // vp decode
    always_comb begin
       // vp_p_d.i0_result = dec_i0_vp_result;
-      vp_p_d.i0_result = '0;
-      vp_p_d.i0_conf   = dec_i0_vp_conf_d;
-      vp_p_d.i0_valid  = dec_i0_decode_d;
+      vp_p_d.i0_result      = '0;
+      vp_p_d.i0_conf        = dec_i0_vp_conf_cnt_d[`P_CONF_WIDTH];
+      vp_p_d.i0_valid       = dec_i0_decode_d;
       // vp_p_d.i1_result = dec_i1_vp_result;
-      vp_p_d.i1_result = '0;
-      vp_p_d.i1_conf   = dec_i1_vp_conf_d;
-      vp_p_d.i1_valid  = dec_i1_decode_d;
-      // only occasion i0 result at decode is used is where i1 at the same cycle is dependent
-/*       vp_p_d.i0_used   = (i1_rs1_depend_i0_d | i1_rs2_depend_i0_d) & // i1 rs1/2 depend on this
-                         // conditions for original i1_mul_block_d
-                         i1_not_alu_eff &
-                         (i1_rs1_class_d.mul | i1_rs2_class_d.mul) & 
-                         (i1_rs1_match_e1_e2 | i1_rs1_match_e1_e2) & 
-                         // vp available
-                         dec_i0_vp_conf;
- */      
-      vp_p_d.i0_used   = 1'b0; // i1 could depend on i0 but we're not letting i1 use i0 vp in dec
+      vp_p_d.i1_result      = '0;
+      vp_p_d.i1_conf        = dec_i1_vp_conf_cnt_d[`P_CONF_WIDTH];
+      vp_p_d.i1_valid       = dec_i1_decode_d;
+      vp_p_d.i0_used        = 1'b0; // i1 could depend on i0 but we're not letting i1 use i0 vp in dec
       // no instructions will depend on i1 in the decode stage
-      vp_p_d.i1_used   = 1'b0;
+      vp_p_d.i1_used        = 1'b0;
+      vp_p_d.mul_way        = dec_i1_mul_d; // 0 for i0 and 1 for i1
+      vp_p_d.mul_rs1_use_vp = dec_i0_mul_d ? dec_i0_rs1_use_vp : dec_i1_mul_d ? dec_i1_rs1_use_vp : 1'b0;
+      vp_p_d.mul_rs2_use_vp = dec_i0_mul_d ? dec_i0_rs2_use_vp : dec_i1_mul_d ? dec_i1_rs2_use_vp : 1'b0;
    end
    rvdffe #( $bits(vp_fw_pkt_t) ) vpe1ff (.*, .en(i0_e1_ctl_en), .din(vp_p_d),  .dout(vp_p_e1));
+   rvdffe #(`P_CONF_WIDTH + 1) vpci0e1ff (.*, .en(i0_e1_data_en), .din(dec_i0_vp_conf_cnt_d), .dout(dec_i0_vp_conf_cnt_e1));
+   rvdffe #(`P_CONF_WIDTH + 1) vpci1e1ff (.*, .en(i1_e1_data_en), .din(dec_i1_vp_conf_cnt_d), .dout(dec_i1_vp_conf_cnt_e1));
    // vp e1
    always_comb begin
       vp_p_e1_in           = vp_p_e1;
@@ -642,41 +709,26 @@ module dec_decode_ctl
       vp_p_e1_in.i0_valid  = vp_p_e1.i0_valid & ~flush_final_e3; // need flush wb here?
       vp_p_e1_in.i1_result = dec_i1_vp_result_e1;
       vp_p_e1_in.i1_valid  = vp_p_e1.i1_valid & ~flush_final_e3; // need flush wb here?
-      vp_p_e1_in.i0_used   = // vp_p_e1.i0_used | // already used
-                             ( (i0_rs1_depend_i0_e1 | i0_rs2_depend_i0_e1 | i1_rs1_depend_i0_e1 | i1_rs2_depend_i0_e1) & // decode stage i0/1 rs1/2 depends on this
-                               i0_not_alu_eff &
-                               (i0_rs1_class_d.mul | i0_rs2_class_d.mul) & 
-                               // vp available
-                               vp_p_e1.i0_conf);
-      vp_p_e1_in.i1_used   = (i0_rs1_depend_i1_e1 | i0_rs2_depend_i1_e1 | i1_rs1_depend_i1_e1 | i1_rs2_depend_i1_e1) & // decode stage i0/1 rs1/2 depends on this
-                             i1_not_alu_eff &
-                             (i1_rs1_class_d.mul | i1_rs2_class_d.mul) & 
-                             // vp available
-                             vp_p_e1.i1_conf;
+      vp_p_e1_in.i0_used   = vp_used & (i0_rs1_depend_i0_e1 | i0_rs2_depend_i0_e1 | i1_rs1_depend_i0_e1 | i1_rs2_depend_i0_e1);
+      vp_p_e1_in.i1_used   = vp_used & (i0_rs1_depend_i1_e1 | i0_rs2_depend_i1_e1 | i1_rs1_depend_i1_e1 | i1_rs2_depend_i1_e1);
    end
    rvdffe #( $bits(vp_fw_pkt_t) ) vpe2ff (.*, .en(i0_e2_ctl_en), .din(vp_p_e1_in),  .dout(vp_p_e2));
+   rvdffe #(`P_CONF_WIDTH + 1) vpci0e2ff (.*, .en(i0_e2_data_en), .din(dec_i0_vp_conf_cnt_e1), .dout(dec_i0_vp_conf_cnt_e2));
+   rvdffe #(`P_CONF_WIDTH + 1) vpci1e2ff (.*, .en(i1_e2_data_en), .din(dec_i1_vp_conf_cnt_e1), .dout(dec_i1_vp_conf_cnt_e2));
    // vp e2
    always_comb begin
       vp_p_e2_in           = vp_p_e2;
       vp_p_e2_in.i0_valid  = vp_p_e2.i0_valid & ~flush_final_e3 & ~flush_lower_wb;
       vp_p_e2_in.i1_valid  = vp_p_e2.i1_valid & ~flush_final_e3 & ~flush_lower_wb;
       vp_p_e2_in.i0_used   = vp_p_e2.i0_used | // already used
-                             ( (i0_rs1_depend_i0_e2 | i0_rs2_depend_i0_e2 | i1_rs1_depend_i0_e2 | i1_rs2_depend_i0_e2) & // decode stage i0/1 rs1/2 depends on this
-                               // conditions for original i0_mul_block_d
-                               i0_not_alu_eff &
-                               (i0_rs1_class_d.mul | i0_rs2_class_d.mul) & 
-                               // vp available
-                               vp_p_e2.i0_conf);
+                             (vp_used & (i0_rs1_depend_i0_e2 | i0_rs2_depend_i0_e2 | i1_rs1_depend_i0_e2 | i1_rs2_depend_i0_e2));
       vp_p_e2_in.i1_used   = vp_p_e2.i1_used | // already used
-                             ( (i0_rs1_depend_i1_e2 | i0_rs2_depend_i1_e2 | i1_rs1_depend_i1_e2 | i1_rs2_depend_i1_e2) & // decode stage i0/1 rs1/2 depends on this
-                               // conditions for original i1_mul_block_d
-                               i1_not_alu_eff &
-                               (i1_rs1_class_d.mul | i1_rs2_class_d.mul) & 
-                               // vp available
-                               vp_p_e2.i1_conf);
+                             (vp_used & (i0_rs1_depend_i1_e2 | i0_rs2_depend_i1_e2 | i1_rs1_depend_i1_e2 | i1_rs2_depend_i1_e2));
 
    end
    rvdffe #( $bits(vp_fw_pkt_t) ) vpe3ff (.*, .en(i0_e3_ctl_en), .din(vp_p_e2_in),  .dout(vp_p_e3));
+   rvdffe #(`P_CONF_WIDTH + 1) vpci0e3ff (.*, .en(i0_e3_data_en), .din(dec_i0_vp_conf_cnt_e2), .dout(dec_i0_vp_conf_cnt_e3));
+   rvdffe #(`P_CONF_WIDTH + 1) vpci1e3ff (.*, .en(i1_e3_data_en), .din(dec_i1_vp_conf_cnt_e2), .dout(dec_i1_vp_conf_cnt_e3));
    // vp e3
    always_comb begin
       if(freeze) begin
@@ -686,25 +738,11 @@ module dec_decode_ctl
          vp_p_e3_in           = vp_p_e3;
          vp_p_e3_in.i0_valid  = vp_p_e3.i0_valid & ~flush_final_e3 & ~flush_lower_wb;
          vp_p_e3_in.i1_valid  = vp_p_e3.i1_valid & ~flush_final_e3 & ~flush_lower_wb;
-         vp_p_e3_in.i0_used   = vp_p_e3.i0_used; // already used
-                                // ( (i0_rs1_depend_i0_e3 | i0_rs2_depend_i0_e3 | i1_rs1_depend_i0_e3 | i1_rs2_depend_i0_e3) & // decode stage i0/1 rs1/2 depends on this
-                                  // conditions for original i1_mul_block_d
-                                  // i1_not_alu_eff &
-                                  // (i1_rs1_class_d.mul | i1_rs2_class_d.mul) & 
-                                  // (i1_rs1_match_e1_e2 | i1_rs1_match_e1_e2) & 
-                                  // vp available
-                                  // vp_p_e3.i0_conf);
-         vp_p_e3_in.i1_used   = vp_p_e3.i1_used; // already used
-                                // ( (i0_rs1_depend_i1_e3 | i0_rs2_depend_i1_e3 | i1_rs1_depend_i1_e3 | i1_rs2_depend_i1_e3) & // decode stage i0/1 rs1/2 depends on this
-                                  // conditions for original i1_mul_block_d
-                                  // i1_not_alu_eff &
-                                  // (i1_rs1_class_d.mul | i1_rs2_class_d.mul) & 
-                                  // (i1_rs1_match_e1_e2 | i1_rs1_match_e1_e2) & 
-                                  // vp available
-                                  // vp_p_e3.i1_conf);
       end
    end
    rvdffe #( $bits(vp_fw_pkt_t) ) vpe4ff (.*, .en(i0_e4_ctl_en), .din(vp_p_e3_in),  .dout(vp_p_e4));
+   rvdffe #(`P_CONF_WIDTH + 1) vpci0e4ff (.*, .en(i0_e4_data_en), .din(dec_i0_vp_conf_cnt_e3), .dout(dec_i0_vp_conf_cnt_e4));
+   rvdffe #(`P_CONF_WIDTH + 1) vpci1e4ff (.*, .en(i1_e4_data_en), .din(dec_i1_vp_conf_cnt_e3), .dout(dec_i1_vp_conf_cnt_e4));
    // vp e4
    always_comb begin
       if(freeze) begin
@@ -717,6 +755,81 @@ module dec_decode_ctl
       vp_p_e4_in.i1_valid  = vp_p_e4.i1_valid & ~flush_lower_wb;
    end
    rvdffe #( $bits(vp_fw_pkt_t) ) vpwbff (.*, .en(i0_wb_ctl_en | exu_div_finish | div_wen_wb), .din(vp_p_e4_in),  .dout(vp_p_wb));
+
+   // vp validation
+   logic i0_vp_misp_e4, i1_vp_misp_e4; // mispredictions validated at e4
+   // logic i0_vp_misp_flush_e4, i1_vp_misp_flush_e4; // flush pipeline due to vp mispredictions
+
+   assign i0_vp_misp_e4 = (i0_result_e4_eff != vp_p_e4.i0_result);
+   assign i1_vp_misp_e4 = (i1_result_e4_eff != vp_p_e4.i1_result);
+
+   assign i0_vp_misp_flush_e4 = i0_vp_misp_e4 & vp_p_e4.i0_used;
+   assign i1_vp_misp_flush_e4 = i1_vp_misp_e4 & vp_p_e4.i1_used;
+   
+   // flush logic
+   // logic e1_i0valid, e1_i1valid, e2_i0valid, e2_i1valid, e3_i0valid, e3_i1valid, e4_i0valid, e4_i1valid, wb_i0valid, wb_i1valid;
+   logic e1_i0valid, e2_i0valid, e3_i0valid, e4_i0valid, e4_i1valid;
+   // logic [31:1] i0_vp_flush_path_e4;
+   // logic [31:1] i1_vp_flush_path_e4;
+   assign e1_i0valid = e1d.i0valid;
+   // assign e1_i1valid = e1d.i1valid;
+   assign e2_i0valid = e2d.i0valid;
+   // assign e2_i1valid = e2d.i1valid;
+   assign e3_i0valid = e3d.i0valid;
+   // assign e3_i1valid = e3d.i1valid;
+   assign e4_i0valid = e4d.i0valid;
+   assign e4_i1valid = e4d.i1valid;
+   // selects the next valid pc as the flush path
+   assign i0_vp_flush_path_e4 = e4_i1valid ? i1_pc_e4 :
+                                e3_i0valid ? i0_pc_e3 :
+                                e2_i0valid ? i0_pc_e2 :
+                                e1_i0valid ? i0_pc_e1 : dec_i0_pc_d;
+   assign i1_vp_flush_path_e4 = e3_i0valid ? i0_pc_e3 :
+                                e2_i0valid ? i0_pc_e2 :
+                                e1_i0valid ? i0_pc_e1 : dec_i0_pc_d;
+   // vp update
+   always_comb begin
+      vp_fb_p_e4.i0_misp    = i0_vp_misp_e4;
+      // vp_fb_p_e4.i0_actual  = i0_result_e4_final;
+      // vp_fb_p_e4.i0_conf    = vp_p_e4.i0_conf;
+      vp_fb_p_e4.i0_used    = vp_p_e4.i0_used;
+      vp_fb_p_e4.i0_valid   = vp_p_e4.i0_valid & e4_i0valid;
+      vp_fb_p_e4.i1_misp    = i1_vp_misp_e4;
+      // vp_fb_p_e4.i1_actual  = i1_result_e4_final;
+      // vp_fb_p_e4.i1_conf    = vp_p_e4.i1_conf;
+      vp_fb_p_e4.i1_used    = vp_p_e4.i1_used;
+      vp_fb_p_e4.i1_valid   = vp_p_e4.i1_valid & e4_i1valid;
+   end
+   
+   // vp debug
+   logic i0_vp_e1_conf, i1_vp_e1_conf, i0_vp_e2_conf, i1_vp_e2_conf, i0_vp_e3_conf, i1_vp_e3_conf, i0_vp_e4_conf, i1_vp_e4_conf;
+   assign i0_vp_e1_conf = vp_p_e1.i0_conf;
+   assign i1_vp_e1_conf = vp_p_e1.i1_conf;
+   assign i0_vp_e2_conf = vp_p_e2.i0_conf;
+   assign i1_vp_e2_conf = vp_p_e2.i1_conf;
+   assign i0_vp_e3_conf = vp_p_e3.i0_conf;
+   assign i1_vp_e3_conf = vp_p_e3.i1_conf;
+   assign i0_vp_e4_conf = vp_p_e4.i0_conf;
+   assign i1_vp_e4_conf = vp_p_e4.i1_conf;
+   logic i0_vp_e1_used, i1_vp_e1_used, i0_vp_e2_used, i1_vp_e2_used, i0_vp_e3_used, i1_vp_e3_used, i0_vp_e4_used, i1_vp_e4_used;
+   assign i0_vp_e1_used = vp_p_e1.i0_used;
+   assign i1_vp_e1_used = vp_p_e1.i1_used;
+   assign i0_vp_e2_used = vp_p_e2.i0_used;
+   assign i1_vp_e2_used = vp_p_e2.i1_used;
+   assign i0_vp_e3_used = vp_p_e3.i0_used;
+   assign i1_vp_e3_used = vp_p_e3.i1_used;
+   assign i0_vp_e4_used = vp_p_e4.i0_used;
+   assign i1_vp_e4_used = vp_p_e4.i1_used;
+   logic [31:0] i0_vp_e1_result, i1_vp_e1_result, i0_vp_e2_result, i1_vp_e2_result, i0_vp_e3_result, i1_vp_e3_result, i0_vp_e4_result, i1_vp_e4_result;
+   assign i0_vp_e1_result = vp_p_e1.i0_result;
+   assign i1_vp_e1_result = vp_p_e1.i1_result;
+   assign i0_vp_e2_result = vp_p_e2.i0_result;
+   assign i1_vp_e2_result = vp_p_e2.i1_result;
+   assign i0_vp_e3_result = vp_p_e3.i0_result;
+   assign i1_vp_e3_result = vp_p_e3.i1_result;
+   assign i0_vp_e4_result = vp_p_e4.i0_result;
+   assign i1_vp_e4_result = vp_p_e4.i1_result;
+
 
 // branch prediction
 
@@ -1916,19 +2029,9 @@ end : cam_array
    assign i0_rs2_match_e1_e2 = i0_rs2_match_e1 | i0_rs2_match_e2;
    assign i0_rs2_match_e1_e3 = i0_rs2_match_e1 | i0_rs2_match_e2 | i0_rs2_match_e3;
 
-// vp match
-   assign i0_vp_avail_e1_e2 = i0_rs1_match_e1_e2 & (
-                                 (vp_p_e1.i0_valid & vp_p_e1.i0_conf) | 
-                                 (vp_p_e1.i1_valid & vp_p_e1.i1_conf) | 
-                                 (vp_p_e2.i0_valid & vp_p_e2.i0_conf) | 
-                                 (vp_p_e2.i1_valid & vp_p_e2.i1_conf));
-
-   assign i1_vp_avail_e1_e2 = i1_rs1_match_e1_e2 & (
-                                 (vp_p_e1.i0_valid & vp_p_e1.i0_conf) | 
-                                 (vp_p_e1.i1_valid & vp_p_e1.i1_conf) | 
-                                 (vp_p_e2.i0_valid & vp_p_e2.i0_conf) | 
-                                 (vp_p_e2.i1_valid & vp_p_e2.i1_conf));
-
+// vp match i0
+   assign i0_rs1_vp_avail_e1_e2 = i0_rs1_match_e1_e2 & vp_avail_e1_e2;
+   assign i0_rs2_vp_avail_e1_e2 = i0_rs2_match_e1_e2 & vp_avail_e1_e2;
 
 
    assign i0_secondary_d = ((i0_dp.alu & (i0_rs1_class_d.load | i0_rs1_class_d.mul) & i0_rs1_match_e1_e2) |
@@ -1966,6 +2069,9 @@ end : cam_array
    assign i1_rs2_match_e1_e2 = i1_rs2_match_e1 | i1_rs2_match_e2;
    assign i1_rs2_match_e1_e3 = i1_rs2_match_e1 | i1_rs2_match_e2 | i1_rs2_match_e3;
 
+// vp match i1
+   assign i1_rs1_vp_avail_e1_e2 = i1_rs1_match_e1_e2 & vp_avail_e1_e2;
+   assign i1_rs2_vp_avail_e1_e2 = i1_rs2_match_e1_e2 & vp_avail_e1_e2;
 
 
 
@@ -2054,15 +2160,23 @@ end : cam_array
                             (i1_not_alu_eff & i1_rs2_class_d.load & i1_rs2_match_e1 & ~i1_dp.store) |
                             (i1_not_alu_eff & i1_rs2_class_d.load & i1_rs2_match_e2 & ~i1_dp.store & ~i1_dp.mul);
 
-   assign i0_mul_block_d = (i0_not_alu_eff & i0_rs1_class_d.mul & i0_rs1_match_e1_e2) |
-                           (i0_not_alu_eff & i0_rs2_class_d.mul & i0_rs2_match_e1_e2);
+   // assign i0_mul_block_d = (i0_not_alu_eff & i0_rs1_class_d.mul & i0_rs1_match_e1_e2) |
+                           // (i0_not_alu_eff & i0_rs2_class_d.mul & i0_rs2_match_e1_e2);
+   assign i0_rs1_mul_block_d = (i0_not_alu_eff & i0_rs1_class_d.mul & i0_rs1_match_e1_e2);
+   assign i0_rs2_mul_block_d = (i0_not_alu_eff & i0_rs2_class_d.mul & i0_rs2_match_e1_e2);
 
-   assign i0_mul_block_d_final = i0_mul_block_d & ~i0_vp_avail_e1_e2; // don't block when vp available
+   assign i0_rs1_mul_block_d_vp = i0_rs1_mul_block_d & ~(i0_dp.mul & i0_rs1_vp_avail_e1_e2); // don't block when vp available for MUL
+   assign i0_rs2_mul_block_d_vp = i0_rs2_mul_block_d & ~(i0_dp.mul & i0_rs2_vp_avail_e1_e2); // don't block when vp available for MUL
+   assign i0_mul_block_d_final = i0_rs1_mul_block_d_vp | i0_rs2_mul_block_d_vp;
 
-   assign i1_mul_block_d = (i1_not_alu_eff & i1_rs1_class_d.mul & i1_rs1_match_e1_e2) |
-                           (i1_not_alu_eff & i1_rs2_class_d.mul & i1_rs2_match_e1_e2);
+   // assign i1_mul_block_d = (i1_not_alu_eff & i1_rs1_class_d.mul & i1_rs1_match_e1_e2) |
+                           // (i1_not_alu_eff & i1_rs2_class_d.mul & i1_rs2_match_e1_e2);
+   assign i1_rs1_mul_block_d = (i1_not_alu_eff & i1_rs1_class_d.mul & i1_rs1_match_e1_e2);
+   assign i1_rs2_mul_block_d = (i1_not_alu_eff & i1_rs2_class_d.mul & i1_rs2_match_e1_e2);
 
-   assign i1_mul_block_d_final = i1_mul_block_d & ~i1_vp_avail_e1_e2; // don't block when vp available
+   assign i1_rs1_mul_block_d_vp = i1_rs1_mul_block_d & ~(i1_dp.mul & i1_rs1_vp_avail_e1_e2); // don't block when vp available for MUL
+   assign i1_rs2_mul_block_d_vp = i1_rs2_mul_block_d & ~(i1_dp.mul & i1_rs2_vp_avail_e1_e2); // don't block when vp available for MUL
+   assign i1_mul_block_d_final = i1_rs1_mul_block_d_vp | i1_rs2_mul_block_d_vp;
 
    assign i0_secondary_block_d = ((~i0_dp.alu & i0_rs1_class_d.sec & i0_rs1_match_e1_e3) |
                                   (~i0_dp.alu & i0_rs2_class_d.sec & i0_rs2_match_e1_e3 & ~i0_dp.store)) & ~disable_secondary;

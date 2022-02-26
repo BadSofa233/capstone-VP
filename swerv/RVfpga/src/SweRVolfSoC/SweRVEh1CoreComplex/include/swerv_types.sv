@@ -128,29 +128,33 @@ typedef struct packed {
 `endif
                        } predict_pkt_t;
                        
-// `ifdef VP_ENABLED
+`ifdef VP_ENABLED
 typedef struct packed {
+                       // TODO: add tag and indices
                        logic [31:0]              i0_result;
-                       logic [31:1]              i0_pc; // debug
                        logic                     i0_conf;
                        logic                     i0_valid;
-                       logic                     i0_used;
+                       logic                     i0_used; // the vp result for i0 is used by a dependent
                        logic [31:0]              i1_result;
-                       logic [31:1]              i1_pc; // debug
                        logic                     i1_conf;
                        logic                     i1_valid;
-                       logic                     i1_used;
+                       logic                     i1_used; // the vp result for i1 is used by a dependent
+                       logic                     mul_way; // indicates the mul is i0 or i1
+                       logic                     mul_rs1_use_vp; // this mul's rs1 uses a vp result
+                       logic                     mul_rs2_use_vp; // this mul's rs2 uses a vp result
                       } vp_fw_pkt_t;
                       
 typedef struct packed {
-                       logic                     misp;
-                       logic [31:0]              actual;
-                       logic [31:0]              pc;
-                       logic [`P_CONF_WIDTH-1:0] conf;
+                       logic                     i0_misp;
+                       logic                     i0_used;
                        // TODO: add tag and indices
-                       logic                     valid;
+                       logic                     i0_valid;
+                       logic                     i1_misp;
+                       logic                     i1_used;
+                       // TODO: add tag and indices
+                       logic                     i1_valid;
                       } vp_fb_pkt_t;
-// `endif
+`endif
 
 typedef struct packed {
                        logic legal;
@@ -325,6 +329,8 @@ typedef struct packed {
                        logic low;
                        logic load_mul_rs1_bypass_e1;
                        logic load_mul_rs2_bypass_e1;
+                       // logic rs1_use_vp_d;
+                       // logic rs2_use_vp_d;
                        } mul_pkt_t;
 
 typedef struct packed {

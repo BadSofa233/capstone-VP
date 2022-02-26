@@ -41,6 +41,14 @@ module exu
    input predict_pkt_t  i0_predict_p_d,                                // DEC branch predict packet
    input predict_pkt_t  i1_predict_p_d,                                // DEC branch predict packet
 
+   input logic         dec_vp_mul_way_e1,                  // i0 rs1 in d use vp
+   input logic         dec_mul_rs1_use_vp_e1,              // i0 rs2 in d use vp
+   input logic         dec_mul_rs2_use_vp_e1,              // i1 rs1 in d use vp
+   input logic [31:0]  dec_i0_vp_rs1_val_e1,               // selected rs1 vp result for i0 in e1
+   input logic [31:0]  dec_i0_vp_rs2_val_e1,               // selected rs2 vp result for i0 in e1
+   input logic [31:0]  dec_i1_vp_rs1_val_e1,               // selected rs1 vp result for i1 in e1
+   input logic [31:0]  dec_i1_vp_rs2_val_e1,               // selected rs2 vp result for i1 in e1
+
    input logic        dec_i0_rs1_bypass_en_e2,                         // DEC bypass bus select for E2 stage
    input logic        dec_i0_rs2_bypass_en_e2,                         // DEC bypass bus select for E2 stage
    input logic        dec_i1_rs1_bypass_en_e2,                         // DEC bypass bus select for E2 stage
@@ -315,8 +323,6 @@ module exu
                                  ({32{  dec_i0_rs2_bypass_en_d &  dec_i0_mul_d               }} & i0_rs2_bypass_data_d[31:0]) |
                                  ({32{  dec_i1_rs2_bypass_en_d & ~dec_i0_mul_d & dec_i1_mul_d}} & i1_rs2_bypass_data_d[31:0]);
 
-
-
    assign div_rs1_d[31:0]      = ({32{ ~dec_i0_rs1_bypass_en_d &  dec_i0_div_d               }} & gpr_i0_rs1_d[31:0]) |
                                  ({32{ ~dec_i1_rs1_bypass_en_d & ~dec_i0_div_d & dec_i1_div_d}} & gpr_i1_rs1_d[31:0]) |
                                  ({32{  dec_i0_rs1_bypass_en_d &  dec_i0_div_d               }} & i0_rs1_bypass_data_d[31:0]) |
@@ -329,6 +335,15 @@ module exu
 
 
    assign csr_rs1_in_d[31:0] = (dec_csr_ren_d) ? i0_rs1_d[31:0] : exu_csr_rs1_e1[31:0];
+
+   // vp mux
+   // logic mul_rs1_use_vp_d, mul_rs2_use_vp_d;
+   // logic mul_rs1_use_vp_e1, mul_rs2_use_vp_e1;
+   logic [31:0] mul_vp_rs1_e1;
+   logic [31:0] mul_vp_rs2_e1;
+
+   assign mul_vp_rs1_e1 = dec_vp_mul_way_e1 ? dec_i0_vp_rs1_val_e1 : dec_i1_vp_rs1_val_e1;
+   assign mul_vp_rs2_e1 = dec_vp_mul_way_e1 ? dec_i0_vp_rs2_val_e1 : dec_i1_vp_rs2_val_e1;
 
    logic       i0_e1_data_en, i0_e2_data_en, i0_e3_data_en;
    logic       i0_e1_ctl_en,  i0_e2_ctl_en,  i0_e3_ctl_en,  i0_e4_ctl_en;
@@ -349,12 +364,16 @@ module exu
 
 
    exu_mul_ctl mul_e1    (.*,
-                          .clk_override  ( clk_override                ),   // I
-                          .freeze        ( freeze                      ),   // I
-                          .mp            ( mul_p                       ),   // I
-                          .a             ( mul_rs1_d[31:0]             ),   // I
-                          .b             ( mul_rs2_d[31:0]             ),   // I
-                          .out           ( exu_mul_result_e3[31:0]     ));  // O
+                          .clk_override      ( clk_override                ),   // I
+                          .freeze            ( freeze                      ),   // I
+                          .mp                ( mul_p                       ),   // I
+                          .a                 ( mul_rs1_d[31:0]             ),   // I
+                          .b                 ( mul_rs2_d[31:0]             ),   // I
+                          .rs1_vp_result_e1  ( mul_vp_rs1_e1[31:0]         ),   // I
+                          .rs2_vp_result_e1  ( mul_vp_rs2_e1[31:0]         ),   // I
+                          .rs1_use_vp_e1     ( dec_mul_rs1_use_vp_e1           ),   // I
+                          .rs2_use_vp_e1     ( dec_mul_rs2_use_vp_e1           ),   // I
+                          .out               ( exu_mul_result_e3[31:0]     ));  // O
 
 
    exu_div_ctl div_e1    (.*,

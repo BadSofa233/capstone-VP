@@ -105,6 +105,12 @@ module dec_tlu_ctl
    input logic [31:1] exu_i0_flush_path_e4, // pipe 0 correct path for mp, merge with lower path
    input logic [31:1] exu_i1_flush_path_e4, // pipe 1 correct path for mp, merge with lower path
 
+// vp
+   input logic          i0_vp_misp_flush_e4, // flush pipeline due to vp mispredictions in i0
+   input logic          i1_vp_misp_flush_e4, // flush pipeline due to vp mispredictions in i1
+   input logic [31:1]   i0_vp_flush_path_e4, // flush path when vp i0 misp
+   input logic [31:1]   i1_vp_flush_path_e4, // flush path when vp i1 misp
+
    input logic [31:1] dec_tlu_i0_pc_e4, // for PC/NPC tracking
    input logic [31:1] dec_tlu_i1_pc_e4, // for PC/NPC tracking
 
@@ -811,7 +817,9 @@ module dec_tlu_ctl
 
    // unified place to manage the killing of arch state writebacks
    assign tlu_i0_kill_writeb_e4 = rfpc_i0_e4 | lsu_i0_exc_dc4 | inst_acc_e4 | (illegal_e4 & dec_tlu_dbg_halted) | i0_trigger_hit_e4 ;
-   assign tlu_i1_kill_writeb_e4 = rfpc_i0_e4 | rfpc_i1_e4 | lsu_exc_valid_e4 | exu_i0_br_mp_e4 | inst_acc_e4 | (illegal_e4 & dec_tlu_dbg_halted) | trigger_hit_e4 | lsu_i0_rfnpc_dc4;
+   // assign tlu_i1_kill_writeb_e4 = rfpc_i0_e4 | rfpc_i1_e4 | lsu_exc_valid_e4 | exu_i0_br_mp_e4 | inst_acc_e4 | (illegal_e4 & dec_tlu_dbg_halted) | trigger_hit_e4 | lsu_i0_rfnpc_dc4;
+   // add i0 vp misp kill
+   assign tlu_i1_kill_writeb_e4 = i0_vp_misp_flush_e4 | rfpc_i0_e4 | rfpc_i1_e4 | lsu_exc_valid_e4 | exu_i0_br_mp_e4 | inst_acc_e4 | (illegal_e4 & dec_tlu_dbg_halted) | trigger_hit_e4 | lsu_i0_rfnpc_dc4;
 
    // refetch PC, microarch flush
    // ic errors only in pipe0
@@ -1013,7 +1021,8 @@ module dec_tlu_ctl
 
 
    assign synchronous_flush_e4 = i0_exception_valid_e4 | // exception
-                                 i0_mp_e4 | i1_mp_e4 |  // mispredict
+                                 i0_mp_e4 | i1_mp_e4 |  // bp mispredict
+                                 i0_vp_misp_flush_e4 | i1_vp_misp_flush_e4 | // vp mispredict
                                  rfpc_i0_e4 | rfpc_i1_e4 | // rfpc
                                  lsu_exc_valid_e4 |  // lsu exception in either pipe 0 or pipe 1
                                  fence_i_e4 |  // fence, a rfnpc
@@ -1037,7 +1046,11 @@ module dec_tlu_ctl
                                       ({31{~take_nmi & mret_e4 & ~wr_mepc_wb}} & mepc[31:1]) |
                                       ({31{~take_nmi & debug_resume_req_f}} & dpc[31:1]) |
                                       ({31{~take_nmi & sel_npc_wb}} & npc_wb[31:1]) |
-                                      ({31{~take_nmi & mret_e4 & wr_mepc_wb}} & dec_csr_wrdata_wb[31:1]) );
+                                      ({31{~take_nmi & mret_e4 & wr_mepc_wb}} & dec_csr_wrdata_wb[31:1]) |
+                                      // vp
+                                      ({31{~take_nmi & i0_vp_misp_flush_e4}} & i0_vp_flush_path_e4[31:1]) | // i0 vp misp flush
+                                      // TODO: investigate lsu_i0_exc_dc4
+                                      ({31{~take_nmi & ~i0_vp_misp_flush_e4 & i1_vp_misp_flush_e4 & ~rfpc_i0_e4 & ~lsu_i0_exc_dc4}} & i0_vp_flush_path_e4[31:1]) ); // i1 vp misp flush
 
    rvdff #(31)  flush_lower_ff (.*, .clk(e4e5_int_clk),
                                   .din({tlu_flush_path_e4[31:1]}),

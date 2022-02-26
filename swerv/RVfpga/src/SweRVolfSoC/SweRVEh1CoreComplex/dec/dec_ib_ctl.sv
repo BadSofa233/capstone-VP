@@ -461,7 +461,7 @@ module dec_ib_ctl
    assign shift_ib2_ib0 = shift2 & ibval[2];
    assign shift_ib3_ib1 = shift2 & ibval[3];
 
-   assign dec_i0_ib_pc_aln = pc0_in[31:1];
-   assign dec_i1_ib_pc_aln = pc1_in[31:1];
+   assign dec_i0_ib_pc_aln = ibwrite[0] ? pc0_in[31:1] : pc0[31:1];
+   assign dec_i1_ib_pc_aln = ibwrite[1] ? pc1_in[31:1] : pc1[31:1];
 
 endmodule

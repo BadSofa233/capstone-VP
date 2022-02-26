@@ -773,6 +773,14 @@ module swerv
    br_tlu_pkt_t dec_tlu_br0_wb_pkt;
    br_tlu_pkt_t dec_tlu_br1_wb_pkt;
 
+   // vp
+   logic         dec_vp_mul_way_e1;                  // i0 rs1 in d use vp
+   logic         dec_mul_rs1_use_vp_e1;                  // i0 rs2 in d use vp
+   logic         dec_mul_rs2_use_vp_e1;                  // i1 rs1 in d use vp
+   logic [31:0]  dec_i0_vp_rs1_val_e1;               // selected rs1 vp result for i0 in d
+   logic [31:0]  dec_i0_vp_rs2_val_e1;               // selected rs2 vp result for i0 in d
+   logic [31:0]  dec_i1_vp_rs1_val_e1;               // selected rs1 vp result for i1 in d
+   logic [31:0]  dec_i1_vp_rs2_val_e1;               // selected rs2 vp result for i1 in d
 
    predict_pkt_t  exu_mp_pkt;
    logic [`RV_BHT_GHR_RANGE]  exu_mp_eghr;
