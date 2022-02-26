@@ -1,0 +1,19 @@
+{
+  "name": "tool-verilator-swervolf",
+  "version": "0.0.200513",
+  "description": "Verilator is an open-source SystemVerilog simulator and lint system",
+  "keywords": [
+    "simulator",
+    "risc-v",
+    "fpga"
+  ],
+  "homepage": "https://www.veripool.org/wiki/verilator",
+  "license": "LGPL-3.0-or-later",
+  "system": [
+    "linux_x86_64"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/verilator/verilator"
+  }
+}
