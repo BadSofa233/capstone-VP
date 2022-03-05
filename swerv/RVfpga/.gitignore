@@ -1,0 +1,8 @@
+/*
+!/src/
+/src/*
+!/src/SweRVolfSoC/
+/src/SweRVolfSoC/*
+!/src/SweRVolfSoC/SweRVEh1CoreComplex/
+!/tests/
+!/.gitignore
