@@ -27,6 +27,7 @@ module swerv_wrapper_dmi
    import swerv_types::*;
 (
    input logic                       clk,
+   input logic                       clk_ram, // for VP
    input logic                       rst_l,
    input logic                       dbg_rst_l,
    input logic [31:1]                rst_vec,

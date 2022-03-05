@@ -1,8 +1,11 @@
 /*
 !/src/
 /src/*
+!/src/rvfpganexys.sv
+!/src/rvfpganexys.xdc
 !/src/SweRVolfSoC/
 /src/SweRVolfSoC/*
+!/src/SweRVolfSoC/swervolf_core.v
 !/src/SweRVolfSoC/SweRVEh1CoreComplex/
 !/tests/
 !/.gitignore

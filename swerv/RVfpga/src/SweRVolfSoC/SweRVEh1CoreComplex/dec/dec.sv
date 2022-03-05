@@ -31,6 +31,7 @@ module dec
    import swerv_types::*;
 (
    input logic clk,
+   input logic clk_ram, // for VP
    input logic free_clk,
    input logic active_clk,
 
@@ -547,11 +548,11 @@ module dec
    assign wr_bank_id  = '0;
 
    // VP unit
-   logic clk_ram; // TODO: move this to input
-   assign clk_ram = 1'b0;
+   // logic clk_ram; // TODO: move this to input
+   // assign clk_ram = 1'b0;
    vp_fb_pkt_t vp_fb_p_e4;
-   logic [31:0] i1_result, i0_result;
-   logic [31:0] i1_cnt, i0_cnt;
+   // logic [31:0] i1_result, i0_result;
+   // logic [31:0] i1_cnt, i0_cnt;
    // provide wrong prediction results after conf
    // always @(posedge clk) begin
       // if(dec_i1_pc_d[31:1] == 31'h2) begin
