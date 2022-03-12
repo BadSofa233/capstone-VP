@@ -25,8 +25,8 @@ module vtage_value_table #(
     input   logic [LP_ADDRESS_WIDTH-1:0]                rda_addr_i,     // read address a
     input   logic [LP_ADDRESS_WIDTH-1:0]                rdb_addr_i,     // read address b
     // write address
-    input   logic [LP_ADDRESS_WIDTH-1:0]                wda_addr_i,     // write address a
-    input   logic [LP_ADDRESS_WIDTH-1:0]                wdb_addr_i,     // write address b
+    input   logic [LP_ADDRESS_WIDTH-1:0]                wra_addr_i,     // write address a
+    input   logic [LP_ADDRESS_WIDTH-1:0]                wrb_addr_i,     // write address b
     // write data
     input   logic [P_DATA_WIDTH-1:0]                    wra_data_i,     // write data a
     input   logic [P_DATA_WIDTH-1:0]                    wrb_data_i,     // write data b
