@@ -2,13 +2,42 @@ create_clock -add -name sys_clk_pin -period 10.00 -waveform {0 5} [get_ports {cl
 create_clock -add -name tck_dmi -period 100.00 [get_pins tap/tap_dmi/TCK];
 create_clock -add -name tck_dtmcs -period 100.00 [get_pins tap/tap_dtmcs/TCK];
 create_clock -add -name tck_idcode -period 100.00 [get_pins tap/tap_idcode/DRCK];
-create_clock -add -name clk_ram -period 5.00 -waveform {2.5 0} [get_ports {clk_ram}];
+# create_clock -add -name clk_ram -period 5.00 -waveform {2.5 0} [get_ports {clk_ram}];
 
 #FIXME: Improve this later but hopefully ok for now.
 #Since the JTAG clock is slow and bits 0 and 1 are properly synced, we can be a bit careless about the rest
 set_false_path -from  [get_cells -regexp {tap/dtmcs_r_reg\[([2-9]|[1-9][0-9])\]}]
 
 #set_false_path -from  [get_cells ddr2/serial_tx_reg]
+
+# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/ib*ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}] 
+# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/ib*ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}] 
+# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/stbuf/stbuf_fwdbyteen_lo_dc3ff/dffs/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
+# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/stbuf/stbuf_fwdbyteen_lo_dc3ff/dffs/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
+# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/stbuf/stbuf_fwddata_lo_dc3ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
+# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/stbuf/stbuf_fwddata_lo_dc3ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
+# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/lsu_lsc_ctl/addr_in_pic_dc3ff/dffs/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
+# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/lsu_lsc_ctl/addr_in_pic_dc3ff/dffs/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
+# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/lsu_lsc_ctl/lsu_pkt_dc3ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
+# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/lsu_lsc_ctl/lsu_pkt_dc3ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
+# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/bus_intf/lsu_full_hit_dc3ff/dffs/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
+# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/bus_intf/lsu_full_hit_dc3ff/dffs/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
+# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/bp1ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
+# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/bp1ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
+# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/dec/decode/flushff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
+# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/dec/decode/flushff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
+
+
+# set_multicycle_path -setup -end 2 -from [all_fanin -flat -startpoints_only [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/ibvalff/pc1_in[*]}]] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDR*[*]}]
+# set_multicycle_path -hold -end 1 -from [all_fanin -flat -startpoints_only [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/ibvalff/pc1_in[*]}]] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDR*[*]}]
+
+set_multicycle_path -setup -end 2 -from [all_fanin -flat -startpoints_only [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/*/pc0_in[*]}]] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDR*[*]}]
+set_multicycle_path -hold -end 1 -from [all_fanin -flat -startpoints_only [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/*/pc0_in[*]}]] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDR*[*]}]
+set_multicycle_path -setup -end 2 -from [all_fanin -flat -startpoints_only [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/*/pc1_in[*]}]] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDR*[*]}]
+set_multicycle_path -hold -end 1 -from [all_fanin -flat -startpoints_only [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/*/pc1_in[*]}]] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDR*[*]}]
+
+
+
 
 set_property -dict { PACKAGE_PIN E3    IOSTANDARD LVCMOS33 } [get_ports { clk }];
 

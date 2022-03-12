@@ -25,7 +25,7 @@
 module rvfpganexys
   #(parameter bootrom_file  = "boot_main.mem")
    (input wire 	       clk,
-    input wire         clk_ram, // for VP baseline
+    // input wire         clk_ram, // for VP baseline
     input wire 	       rstn,
     output wire [12:0] ddram_a,
     output wire [2:0]  ddram_ba,
@@ -68,6 +68,9 @@ module rvfpganexys
    wire 	 rst_core;
    wire 	 user_clk;
    wire 	 user_rst;
+   // vp
+   wire      clk_ram;
+   assign clk_ram = user_clk;
 
    clk_gen_nexys clk_gen
      (.i_clk (user_clk),
