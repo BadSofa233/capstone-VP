@@ -72,8 +72,8 @@ module dec_decode_ctl
    input  logic [31:0]            dec_i1_vp_result_e1,   // i1 vp result
    input  logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_d,  // i0 vp confidence decode
    input  logic [`P_CONF_WIDTH:0] dec_i1_vp_conf_cnt_d,  // i1 vp confidence decode
-   output logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_e4, // i0 vp confidence e4
-   output logic [`P_CONF_WIDTH:0] dec_i1_vp_conf_cnt_e4, // i1 vp confidence e4
+   output logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_wb, // i0 vp confidence wb
+   output logic [`P_CONF_WIDTH:0] dec_i1_vp_conf_cnt_wb, // i1 vp confidence wb
 
    output logic         dec_vp_mul_way_e1,                  // i0 rs1 in d use vp
    output logic         dec_mul_rs1_use_vp_e1,              // i0 rs2 in d use vp
@@ -88,7 +88,10 @@ module dec_decode_ctl
    output logic [31:1]  i0_vp_flush_path_e4,                // flush path when vp i0 misp
    output logic [31:1]  i1_vp_flush_path_e4,                // flush path when vp i1 misp
    // update
-   output vp_fb_pkt_t   vp_fb_p_e4,                         // vp update control packet
+   // output vp_fb_pkt_t   vp_fb_p_e4,                         // vp update control packet e4
+   output vp_fb_pkt_t   vp_fb_p_wb,                         // vp update control packet wb
+   output logic [31:0]  i0_result_wb_eff,  // vp actual result
+   output logic [31:0]  i1_result_wb_eff,  // vp actual result
    // output logic [31:0]  i0_result_e4_final, 
    // output logic [31:0]  i1_result_e4_final,
    
@@ -460,7 +463,7 @@ module dec_decode_ctl
 
    logic [31:0] i0_result_e4_freeze, i1_result_e4_freeze;
    logic [31:0] i0_result_wb_freeze, i1_result_wb_freeze;
-   logic [31:0] i1_result_wb_eff, i0_result_wb_eff;
+   // logic [31:0] i1_result_wb_eff, i0_result_wb_eff;
    logic [2:0]  i1rs1_intra, i1rs2_intra;
    logic        i1_rs1_intra_bypass, i1_rs2_intra_bypass;
    logic        store_data_bypass_c1, store_data_bypass_c2;
@@ -636,13 +639,13 @@ module dec_decode_ctl
    logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_e1, dec_i1_vp_conf_cnt_e1;
    logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_e2, dec_i1_vp_conf_cnt_e2;
    logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_e3, dec_i1_vp_conf_cnt_e3;
-   // logic [`P_CONF_WIDTH:0] i0_vp_conf_cnt_e4, i1_vp_conf_cnt_e4; 
+   logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_e4, dec_i1_vp_conf_cnt_e4;
    vp_fw_pkt_t vp_p_e1_in, vp_p_e2_in, vp_p_e3_in, vp_p_e4_in, vp_p_wb_in; // TODO: need vp_p_wb?
    // logic dec_i0_rs1_use_vp, dec_i0_rs2_use_vp;
    // logic dec_i1_rs1_use_vp, dec_i1_rs2_use_vp;
    // logic i0_vp_used_d, i0_vp_used_e1, i0_vp_used_e2, i0_vp_used_e3, i0_vp_used_e4, i0_vp_used_wb; 
    // logic i1_vp_used_d, i1_vp_used_e1, i1_vp_used_e2, i1_vp_used_e3, i1_vp_used_e4, i1_vp_used_wb; 
-   // vp_fb_pkt_t vp_fb_p_e4;
+   vp_fb_pkt_t vp_fb_p_e4;
    logic vp_avail_e1_e2;
    logic dec_i0_rs1_use_vp;                  // i0 rs1 in d use vp
    logic dec_i0_rs2_use_vp;                  // i0 rs2 in d use vp
@@ -755,6 +758,8 @@ module dec_decode_ctl
       vp_p_e4_in.i1_valid  = vp_p_e4.i1_valid & ~flush_lower_wb;
    end
    rvdffe #( $bits(vp_fw_pkt_t) ) vpwbff (.*, .en(i0_wb_ctl_en | exu_div_finish | div_wen_wb), .din(vp_p_e4_in),  .dout(vp_p_wb));
+   rvdffe #(`P_CONF_WIDTH + 1) vpci0wbff (.*, .en(i0_wb_data_en | exu_div_finish), .din(dec_i0_vp_conf_cnt_e4), .dout(dec_i0_vp_conf_cnt_wb));
+   rvdffe #(`P_CONF_WIDTH + 1) vpci1wbff (.*, .en(i1_wb_data_en), .din(dec_i1_vp_conf_cnt_e4), .dout(dec_i1_vp_conf_cnt_wb));
 
    // vp validation
    logic i0_vp_misp_e4, i1_vp_misp_e4; // mispredictions validated at e4
@@ -790,16 +795,13 @@ module dec_decode_ctl
    // vp update
    always_comb begin
       vp_fb_p_e4.i0_misp    = i0_vp_misp_e4;
-      // vp_fb_p_e4.i0_actual  = i0_result_e4_final;
-      // vp_fb_p_e4.i0_conf    = vp_p_e4.i0_conf;
       vp_fb_p_e4.i0_used    = vp_p_e4.i0_used;
       vp_fb_p_e4.i0_valid   = vp_p_e4.i0_valid & e4_i0valid;
       vp_fb_p_e4.i1_misp    = i1_vp_misp_e4;
-      // vp_fb_p_e4.i1_actual  = i1_result_e4_final;
-      // vp_fb_p_e4.i1_conf    = vp_p_e4.i1_conf;
       vp_fb_p_e4.i1_used    = vp_p_e4.i1_used;
       vp_fb_p_e4.i1_valid   = vp_p_e4.i1_valid & e4_i1valid;
    end
+   rvdffe #( $bits(vp_fb_pkt_t) ) vpfbff (.*, .en(i0_wb_ctl_en | exu_div_finish | div_wen_wb), .din(vp_fb_p_e4),  .dout(vp_fb_p_wb));
    
    // vp debug
    logic i0_vp_e1_conf, i1_vp_e1_conf, i0_vp_e2_conf, i1_vp_e2_conf, i0_vp_e3_conf, i1_vp_e3_conf, i0_vp_e4_conf, i1_vp_e4_conf;

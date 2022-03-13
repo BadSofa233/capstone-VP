@@ -523,8 +523,12 @@ module dec
    logic [31:0]               dec_i1_vp_result_e1;
    logic [`P_CONF_WIDTH:0]    dec_i0_vp_conf_cnt_d;
    logic [`P_CONF_WIDTH:0]    dec_i1_vp_conf_cnt_d;
-   logic [`P_CONF_WIDTH:0]    dec_i0_vp_conf_cnt_e4;
-   logic [`P_CONF_WIDTH:0]    dec_i1_vp_conf_cnt_e4;
+   logic [`P_CONF_WIDTH:0]    dec_i0_vp_conf_cnt_wb;
+   logic [`P_CONF_WIDTH:0]    dec_i1_vp_conf_cnt_wb;
+   logic [31:0]               i0_result_wb_eff;
+   logic [31:0]               i1_result_wb_eff;
+   logic [31:1]               dec_i0_pc_wb;
+   logic [31:1]               dec_i1_pc_wb;
 
    logic                      i0_vp_misp_flush_e4;
    logic                      i1_vp_misp_flush_e4;
@@ -548,22 +552,7 @@ module dec
    assign wr_bank_id  = '0;
 
    // VP unit
-   // logic clk_ram; // TODO: move this to input
-   // assign clk_ram = 1'b0;
-   vp_fb_pkt_t vp_fb_p_e4;
-   // logic [31:0] i1_result, i0_result;
-   // logic [31:0] i1_cnt, i0_cnt;
-   // provide wrong prediction results after conf
-   // always @(posedge clk) begin
-      // if(dec_i1_pc_d[31:1] == 31'h2) begin
-         // i1_cnt = i1_cnt + 1'b1;
-      // end
-      // if(dec_i0_pc_d[31:1] == 31'h2) begin
-         // i0_cnt = i0_cnt + 1'b1;
-      // end
-   // end
-   // assign dec_i1_vp_result_e1 = (i1_cnt == 2**`P_CONF_WIDTH + 2) ? 0 : i1_result;
-   // assign dec_i0_vp_result_e1 = (i0_cnt == 2**`P_CONF_WIDTH + 2) ? 0 : i0_result;
+   vp_fb_pkt_t vp_fb_p_wb;
    
    vp_wrapper #(
       .P_ALGORITHM      ("BASELINE"),
@@ -584,11 +573,11 @@ module dec
       // .pred_conf_e1_o   (), // TODO: delete?
       // .pred_valid_e1_o  (), // TODO: delete?
       // .pred_en_e1_i     ({i1_use_vp, i0_use_vp}),
-      .fb_pc_i          ({dec_tlu_i1_pc_e4, dec_tlu_i0_pc_e4}), // do loopback for debug, TODO: change to fb packet
-      .fb_actual_i      ({i1_result_e4_eff, i0_result_e4_eff}),
-      .fb_mispredict_i  ({vp_fb_p_e4.i1_misp, vp_fb_p_e4.i0_misp}),
-      .fb_conf_i        ({dec_i1_vp_conf_cnt_e4, dec_i0_vp_conf_cnt_e4}),
-      .fb_valid_i       ({vp_fb_p_e4.i1_valid, vp_fb_p_e4.i0_valid})
+      .fb_pc_i          ({dec_i1_pc_wb, dec_i0_pc_wb}), // do loopback for debug, TODO: change to fb packet
+      .fb_actual_i      ({i1_result_wb_eff, i0_result_wb_eff}),
+      .fb_mispredict_i  ({vp_fb_p_wb.i1_misp, vp_fb_p_wb.i0_misp}),
+      .fb_conf_i        ({dec_i1_vp_conf_cnt_wb, dec_i0_vp_conf_cnt_wb}),
+      .fb_valid_i       ({vp_fb_p_wb.i1_valid, vp_fb_p_wb.i0_valid})
    );
 
 

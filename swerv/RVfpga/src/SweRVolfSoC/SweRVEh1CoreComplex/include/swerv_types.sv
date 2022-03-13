@@ -148,9 +148,11 @@ typedef struct packed {
                        logic                     i0_misp;
                        logic                     i0_used;
                        // TODO: add tag and indices
+                       logic [2:0]               i0_useful;
                        logic                     i0_valid;
                        logic                     i1_misp;
                        logic                     i1_used;
+                       logic [2:0]               i1_useful;
                        // TODO: add tag and indices
                        logic                     i1_valid;
                       } vp_fb_pkt_t;
