@@ -14,6 +14,8 @@ module multiport_ram_tb ();
     logic                                           clk;
     logic                                           clk_mp;
     
+    logic                                           rst;
+    
     logic [LP_INDEX_WIDTH-1:0]                      rda_addr;       // read port A address
     logic [LP_INDEX_WIDTH-1:0]                      rdb_addr;       // read port B address
     
@@ -48,6 +50,8 @@ module multiport_ram_tb ();
     initial begin
         clk = 0;
         clk_mp = 1;
+        rst = 1;
+        #7 rst = 0;
         for(integer i = 0; i < P_MEM_DEPTH; i = i + 1) begin
             mem[i] = 0;
         end
@@ -129,6 +133,7 @@ module multiport_ram_tb ();
     ) dut (
         .clk_i              (clk),
         .clk_mp_i           (clk_mp),
+        .rst_i              (rst),
         .rda_addr_i         (rda_addr),
         .rdb_addr_i         (rdb_addr),
         .rda_data_o         (rda_data_dut),
