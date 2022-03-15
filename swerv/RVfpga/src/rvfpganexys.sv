@@ -65,18 +65,30 @@ module rvfpganexys
    localparam RAM_SIZE     = 32'h10000;
 
    wire 	 clk_core;
-   wire 	 rst_core;
+   // wire 	 rst_core;
+   wire 	 rst_raw; // raw clk_core synced reset
    wire 	 user_clk;
    wire 	 user_rst;
    // vp
    wire      clk_ram;
+   reg       rst_core; // stretched clk_ram synced reset
    assign clk_ram = user_clk;
+   // rst sync, goes low at negedge of clk_core for multipumped RAM sync
+   always @(posedge clk_ram) begin
+      if(rst_raw) begin
+         rst_core <= 1'b1;
+      end
+      else if(clk_core == 1'b0) begin
+         rst_core <= 1'b0;
+      end
+   end
 
    clk_gen_nexys clk_gen
      (.i_clk (user_clk),
       .i_rst (user_rst),
       .o_clk_core (clk_core),
-      .o_rst_core (rst_core));
+      // .o_rst_core (rst_core));
+      .o_rst_core (rst_raw));
 
    AXI_BUS #(32, 64, 6, 1) mem();
    AXI_BUS #(32, 64, 6, 1) cpu();

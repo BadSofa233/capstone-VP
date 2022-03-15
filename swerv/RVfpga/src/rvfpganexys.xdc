@@ -10,24 +10,6 @@ set_false_path -from  [get_cells -regexp {tap/dtmcs_r_reg\[([2-9]|[1-9][0-9])\]}
 
 #set_false_path -from  [get_cells ddr2/serial_tx_reg]
 
-# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/ib*ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}] 
-# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/ib*ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}] 
-# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/stbuf/stbuf_fwdbyteen_lo_dc3ff/dffs/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
-# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/stbuf/stbuf_fwdbyteen_lo_dc3ff/dffs/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
-# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/stbuf/stbuf_fwddata_lo_dc3ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
-# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/stbuf/stbuf_fwddata_lo_dc3ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
-# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/lsu_lsc_ctl/addr_in_pic_dc3ff/dffs/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
-# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/lsu_lsc_ctl/addr_in_pic_dc3ff/dffs/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
-# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/lsu_lsc_ctl/lsu_pkt_dc3ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
-# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/lsu_lsc_ctl/lsu_pkt_dc3ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
-# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/bus_intf/lsu_full_hit_dc3ff/dffs/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
-# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/lsu/bus_intf/lsu_full_hit_dc3ff/dffs/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
-# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/bp1ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
-# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/bp1ff/genblock.dff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
-# set_multicycle_path -setup -end 2 -from [get_pins {swervolf/swerv_eh1/swerv/dec/decode/flushff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
-# set_multicycle_path -hold -end 1 -from [get_pins {swervolf/swerv_eh1/swerv/dec/decode/flushff/dffs/dout_reg[*]*/C}] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDRARDADDR[*]}]
-
-
 # set_multicycle_path -setup -end 2 -from [all_fanin -flat -startpoints_only [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/ibvalff/pc1_in[*]}]] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDR*[*]}]
 # set_multicycle_path -hold -end 1 -from [all_fanin -flat -startpoints_only [get_pins {swervolf/swerv_eh1/swerv/dec/instbuff/ibvalff/pc1_in[*]}]] -to [get_pins {swervolf/swerv_eh1/swerv/dec/dec_vp_ctl/baseline_top/*_table/mem_reg/ADDR*[*]}]
 
