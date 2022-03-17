@@ -68,10 +68,10 @@ module dec_decode_ctl
    input br_pkt_t dec_i1_brp,
 
 // vp
-   input  logic [31:0]            dec_i0_vp_result_e1,   // i0 vp result
-   input  logic [31:0]            dec_i1_vp_result_e1,   // i1 vp result
-   input  logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_d,  // i0 vp confidence decode
-   input  logic [`P_CONF_WIDTH:0] dec_i1_vp_conf_cnt_d,  // i1 vp confidence decode
+   input  logic [31:0]            ib_i0_vp_result_e1,   // i0 vp result
+   input  logic [31:0]            ib_i1_vp_result_e1,   // i1 vp result
+   input  logic [`P_CONF_WIDTH:0] ib_i0_vp_conf_cnt_d,  // i0 vp confidence decode
+   input  logic [`P_CONF_WIDTH:0] ib_i1_vp_conf_cnt_d,  // i1 vp confidence decode
    output logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_wb, // i0 vp confidence wb
    output logic [`P_CONF_WIDTH:0] dec_i1_vp_conf_cnt_wb, // i1 vp confidence wb
 
@@ -88,10 +88,12 @@ module dec_decode_ctl
    output logic [31:1]  i0_vp_flush_path_e4,                // flush path when vp i0 misp
    output logic [31:1]  i1_vp_flush_path_e4,                // flush path when vp i1 misp
    // update
+   output logic [31:1] i0_pc_wb,
+   output logic [31:1] i1_pc_wb,
    // output vp_fb_pkt_t   vp_fb_p_e4,                         // vp update control packet e4
    output vp_fb_pkt_t   vp_fb_p_wb,                         // vp update control packet wb
-   output logic [31:0]  i0_result_wb_eff,  // vp actual result
-   output logic [31:0]  i1_result_wb_eff,  // vp actual result
+   output logic [31:0]  i0_result_wb,  // vp actual result
+   output logic [31:0]  i1_result_wb,  // vp actual result
    // output logic [31:0]  i0_result_e4_final, 
    // output logic [31:0]  i1_result_e4_final,
    
@@ -325,7 +327,7 @@ module dec_decode_ctl
    logic [31:0]                      i1_result_e2;
    logic [31:0]        i0_result_e3, i1_result_e3;
    logic [31:0]        i0_result_e4, i1_result_e4;
-   logic [31:0]        i0_result_wb, i1_result_wb;
+   // logic [31:0]        i0_result_wb, i1_result_wb;
 
    logic [31:1]        i0_pc_e1, i1_pc_e1;
    logic [31:1]        i0_pc_e2, i1_pc_e2;
@@ -463,7 +465,7 @@ module dec_decode_ctl
 
    logic [31:0] i0_result_e4_freeze, i1_result_e4_freeze;
    logic [31:0] i0_result_wb_freeze, i1_result_wb_freeze;
-   // logic [31:0] i1_result_wb_eff, i0_result_wb_eff;
+   logic [31:0] i1_result_wb_eff, i0_result_wb_eff;
    logic [2:0]  i1rs1_intra, i1rs2_intra;
    logic        i1_rs1_intra_bypass, i1_rs2_intra_bypass;
    logic        store_data_bypass_c1, store_data_bypass_c2;
@@ -534,7 +536,7 @@ module dec_decode_ctl
    logic pause_state_in, pause_state;
    logic pause_stall;
 
-   logic [31:1] i1_pc_wb;
+   // logic [31:1] i1_pc_wb;
 
    logic        i0_brp_valid;
    logic        nonblock_load_cancel;
@@ -609,8 +611,8 @@ module dec_decode_ctl
    logic [31:0]        i0_inst_wb1,i1_inst_wb1;
 
    logic [31:0]        div_inst;
-   logic [31:1] i0_pc_wb, i0_pc_wb1;
-   logic [31:1]           i1_pc_wb1;
+   // logic [31:1] i0_pc_wb, i0_pc_wb1;
+   logic [31:1] i0_pc_wb1, i1_pc_wb1;
    logic [31:1] last_pc_e2;
 
    reg_pkt_t i0r, i1r;
@@ -640,6 +642,11 @@ module dec_decode_ctl
    logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_e2, dec_i1_vp_conf_cnt_e2;
    logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_e3, dec_i1_vp_conf_cnt_e3;
    logic [`P_CONF_WIDTH:0] dec_i0_vp_conf_cnt_e4, dec_i1_vp_conf_cnt_e4;
+   logic [31:0]  dec_i0_vp_rs1_val_e1_in;               // selected rs1 vp result for i0 in d
+   logic [31:0]  dec_i0_vp_rs2_val_e1_in;               // selected rs2 vp result for i0 in d
+   logic [31:0]  dec_i1_vp_rs1_val_e1_in;               // selected rs1 vp result for i1 in d
+   logic [31:0]  dec_i1_vp_rs2_val_e1_in;               // selected rs2 vp result for i1 in d
+
    vp_fw_pkt_t vp_p_e1_in, vp_p_e2_in, vp_p_e3_in, vp_p_e4_in, vp_p_wb_in; // TODO: need vp_p_wb?
    // logic dec_i0_rs1_use_vp, dec_i0_rs2_use_vp;
    // logic dec_i1_rs1_use_vp, dec_i1_rs2_use_vp;
@@ -664,22 +671,28 @@ module dec_decode_ctl
    assign dec_i1_rs2_use_vp = i1_rs2_mul_block_d & i1_dp.mul & i1_rs2_vp_avail_e1_e2;
    assign vp_used = dec_i0_rs1_use_vp | dec_i0_rs2_use_vp | dec_i1_rs1_use_vp | dec_i1_rs2_use_vp;
    
-   assign dec_i0_vp_rs1_val_e1 = i0_rs1_depend_i0_e1 ? dec_i0_vp_result_e1 : 
-                                 i0_rs1_depend_i1_e1 ? dec_i1_vp_result_e1 :
-                                 i0_rs1_depend_i0_e2 ? vp_p_e2.i0_result : vp_p_e2.i1_result;
-                                 // i0_rs1_depend_i1_e2 ? vp_p_e2.i1_result;
-   assign dec_i0_vp_rs2_val_e1 = i0_rs2_depend_i0_e1 ? dec_i0_vp_result_e1 : 
-                                 i0_rs2_depend_i1_e1 ? dec_i1_vp_result_e1 :
-                                 i0_rs2_depend_i0_e2 ? vp_p_e2.i0_result : vp_p_e2.i1_result;
-                                 // i0_rs2_depend_i1_e2 ? vp_p_e2.i1_result;
-   assign dec_i1_vp_rs1_val_e1 = i1_rs1_depend_i0_e1 ? dec_i0_vp_result_e1 : 
-                                 i1_rs1_depend_i1_e1 ? dec_i1_vp_result_e1 :
-                                 i1_rs1_depend_i0_e2 ? vp_p_e2.i0_result : vp_p_e2.i1_result;
-                                 // i1_rs1_depend_i1_e2 ? vp_p_e2.i1_result;
-   assign dec_i1_vp_rs2_val_e1 = i1_rs2_depend_i0_e1 ? dec_i0_vp_result_e1 : 
-                                 i1_rs2_depend_i1_e1 ? dec_i1_vp_result_e1 :
-                                 i1_rs2_depend_i0_e2 ? vp_p_e2.i0_result : vp_p_e2.i1_result;
-                                 // i1_rs2_depend_i1_e2 ? vp_p_e2.i1_result;
+   // TODO: delay vp val selection 1 cycle, add i1_e1 depend i0_e1 comparison
+   assign dec_i0_vp_rs1_val_e1_in = i0_rs1_depend_i0_e1 ? ib_i0_vp_result_e1 : 
+                                    i0_rs1_depend_i1_e1 ? ib_i1_vp_result_e1 :
+                                    i0_rs1_depend_i0_e2 ? vp_p_e2.i0_result : vp_p_e2.i1_result;
+                                    // i0_rs1_depend_i1_e2 ? vp_p_e2.i1_result;
+   rvdffe #(32) i0rs1vpff (.*, .en(i0_e1_data_en), .din(dec_i0_vp_rs1_val_e1_in), .dout(dec_i0_vp_rs1_val_e1));
+   assign dec_i0_vp_rs2_val_e1_in = i0_rs2_depend_i0_e1 ? ib_i0_vp_result_e1 : 
+                                    i0_rs2_depend_i1_e1 ? ib_i1_vp_result_e1 :
+                                    i0_rs2_depend_i0_e2 ? vp_p_e2.i0_result : vp_p_e2.i1_result;
+                                    // i0_rs2_depend_i1_e2 ? vp_p_e2.i1_result;
+   rvdffe #(32) i0rs2vpff (.*, .en(i0_e1_data_en), .din(dec_i0_vp_rs2_val_e1_in), .dout(dec_i0_vp_rs2_val_e1));
+   // TODO: add i0_e1->i1_e1 vp selection
+   assign dec_i1_vp_rs1_val_e1_in = i1_rs1_depend_i0_e1 ? ib_i0_vp_result_e1 : 
+                                    i1_rs1_depend_i1_e1 ? ib_i1_vp_result_e1 :
+                                    i1_rs1_depend_i0_e2 ? vp_p_e2.i0_result : vp_p_e2.i1_result;
+                                    // i1_rs1_depend_i1_e2 ? vp_p_e2.i1_result;
+   rvdffe #(32) i1rs1vpff (.*, .en(i1_e1_data_en), .din(dec_i1_vp_rs1_val_e1_in), .dout(dec_i1_vp_rs1_val_e1));
+   assign dec_i1_vp_rs2_val_e1_in = i1_rs2_depend_i0_e1 ? ib_i0_vp_result_e1 : 
+                                    i1_rs2_depend_i1_e1 ? ib_i1_vp_result_e1 :
+                                    i1_rs2_depend_i0_e2 ? vp_p_e2.i0_result : vp_p_e2.i1_result;
+                                    // i1_rs2_depend_i1_e2 ? vp_p_e2.i1_result;
+   rvdffe #(32) i1rs2vpff (.*, .en(i1_e1_data_en), .din(dec_i1_vp_rs2_val_e1_in), .dout(dec_i1_vp_rs2_val_e1));
 
    assign dec_vp_mul_way_e1 = vp_p_e1.mul_way;
    assign dec_mul_rs1_use_vp_e1 = vp_p_e1.mul_rs1_use_vp;
@@ -689,28 +702,28 @@ module dec_decode_ctl
    always_comb begin
       // vp_p_d.i0_result = dec_i0_vp_result;
       vp_p_d.i0_result      = '0;
-      vp_p_d.i0_conf        = dec_i0_vp_conf_cnt_d[`P_CONF_WIDTH];
+      vp_p_d.i0_conf        = ib_i0_vp_conf_cnt_d[`P_CONF_WIDTH];
       vp_p_d.i0_valid       = dec_i0_decode_d;
       // vp_p_d.i1_result = dec_i1_vp_result;
       vp_p_d.i1_result      = '0;
-      vp_p_d.i1_conf        = dec_i1_vp_conf_cnt_d[`P_CONF_WIDTH];
+      vp_p_d.i1_conf        = ib_i1_vp_conf_cnt_d[`P_CONF_WIDTH];
       vp_p_d.i1_valid       = dec_i1_decode_d;
       vp_p_d.i0_used        = 1'b0; // i1 could depend on i0 but we're not letting i1 use i0 vp in dec
       // no instructions will depend on i1 in the decode stage
       vp_p_d.i1_used        = 1'b0;
-      vp_p_d.mul_way        = dec_i1_mul_d; // 0 for i0 and 1 for i1
+      vp_p_d.mul_way        = dec_i1_mul_d & dec_i1_decode_d; // 0 for i0 and 1 for i1
       vp_p_d.mul_rs1_use_vp = dec_i0_mul_d ? dec_i0_rs1_use_vp : dec_i1_mul_d ? dec_i1_rs1_use_vp : 1'b0;
       vp_p_d.mul_rs2_use_vp = dec_i0_mul_d ? dec_i0_rs2_use_vp : dec_i1_mul_d ? dec_i1_rs2_use_vp : 1'b0;
    end
    rvdffe #( $bits(vp_fw_pkt_t) ) vpe1ff (.*, .en(i0_e1_ctl_en), .din(vp_p_d),  .dout(vp_p_e1));
-   rvdffe #(`P_CONF_WIDTH + 1) vpci0e1ff (.*, .en(i0_e1_data_en), .din(dec_i0_vp_conf_cnt_d), .dout(dec_i0_vp_conf_cnt_e1));
-   rvdffe #(`P_CONF_WIDTH + 1) vpci1e1ff (.*, .en(i1_e1_data_en), .din(dec_i1_vp_conf_cnt_d), .dout(dec_i1_vp_conf_cnt_e1));
+   rvdffe #(`P_CONF_WIDTH + 1) vpci0e1ff (.*, .en(i0_e1_data_en), .din(ib_i0_vp_conf_cnt_d), .dout(dec_i0_vp_conf_cnt_e1));
+   rvdffe #(`P_CONF_WIDTH + 1) vpci1e1ff (.*, .en(i1_e1_data_en), .din(ib_i1_vp_conf_cnt_d), .dout(dec_i1_vp_conf_cnt_e1));
    // vp e1
    always_comb begin
       vp_p_e1_in           = vp_p_e1;
-      vp_p_e1_in.i0_result = dec_i0_vp_result_e1;
+      vp_p_e1_in.i0_result = ib_i0_vp_result_e1;
       vp_p_e1_in.i0_valid  = vp_p_e1.i0_valid & ~flush_final_e3; // need flush wb here?
-      vp_p_e1_in.i1_result = dec_i1_vp_result_e1;
+      vp_p_e1_in.i1_result = ib_i1_vp_result_e1;
       vp_p_e1_in.i1_valid  = vp_p_e1.i1_valid & ~flush_final_e3; // need flush wb here?
       vp_p_e1_in.i0_used   = vp_used & (i0_rs1_depend_i0_e1 | i0_rs2_depend_i0_e1 | i1_rs1_depend_i0_e1 | i1_rs2_depend_i0_e1);
       vp_p_e1_in.i1_used   = vp_used & (i0_rs1_depend_i1_e1 | i0_rs2_depend_i1_e1 | i1_rs1_depend_i1_e1 | i1_rs2_depend_i1_e1);

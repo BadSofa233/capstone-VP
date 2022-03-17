@@ -342,8 +342,8 @@ module exu
    logic [31:0] mul_vp_rs1_e1;
    logic [31:0] mul_vp_rs2_e1;
 
-   assign mul_vp_rs1_e1 = dec_vp_mul_way_e1 ? dec_i0_vp_rs1_val_e1 : dec_i1_vp_rs1_val_e1;
-   assign mul_vp_rs2_e1 = dec_vp_mul_way_e1 ? dec_i0_vp_rs2_val_e1 : dec_i1_vp_rs2_val_e1;
+   assign mul_vp_rs1_e1 = dec_vp_mul_way_e1 ? dec_i1_vp_rs1_val_e1 : dec_i0_vp_rs1_val_e1;
+   assign mul_vp_rs2_e1 = dec_vp_mul_way_e1 ? dec_i1_vp_rs2_val_e1 : dec_i0_vp_rs2_val_e1;
 
    logic       i0_e1_data_en, i0_e2_data_en, i0_e3_data_en;
    logic       i0_e1_ctl_en,  i0_e2_ctl_en,  i0_e3_ctl_en,  i0_e4_ctl_en;

@@ -519,16 +519,20 @@ module dec
    // VP
    logic [31:1]               dec_i0_ib_pc_aln; // next PC address for dec, used for VP
    logic [31:1]               dec_i1_ib_pc_aln; // TODO: hook ib_ctl's pc[01]_in to these
-   logic [31:0]               dec_i0_vp_result_e1;
-   logic [31:0]               dec_i1_vp_result_e1;
-   logic [`P_CONF_WIDTH:0]    dec_i0_vp_conf_cnt_d;
-   logic [`P_CONF_WIDTH:0]    dec_i1_vp_conf_cnt_d;
+   logic [31:0]               i0_vp_result_e1;
+   logic [31:0]               ib_i0_vp_result_e1;
+   logic [31:0]               i1_vp_result_e1;
+   logic [31:0]               ib_i1_vp_result_e1;
+   logic [`P_CONF_WIDTH:0]    i0_vp_conf_cnt_d;
+   logic [`P_CONF_WIDTH:0]    ib_i0_vp_conf_cnt_d;
+   logic [`P_CONF_WIDTH:0]    i1_vp_conf_cnt_d;
+   logic [`P_CONF_WIDTH:0]    ib_i1_vp_conf_cnt_d;
    logic [`P_CONF_WIDTH:0]    dec_i0_vp_conf_cnt_wb;
    logic [`P_CONF_WIDTH:0]    dec_i1_vp_conf_cnt_wb;
-   logic [31:0]               i0_result_wb_eff;
-   logic [31:0]               i1_result_wb_eff;
-   logic [31:1]               dec_i0_pc_wb;
-   logic [31:1]               dec_i1_pc_wb;
+   logic [31:0]               i0_result_wb;
+   logic [31:0]               i1_result_wb;
+   logic [31:1]               i0_pc_wb;
+   logic [31:1]               i1_pc_wb;
 
    logic                      i0_vp_misp_flush_e4;
    logic                      i1_vp_misp_flush_e4;
@@ -552,6 +556,7 @@ module dec
    assign wr_bank_id  = '0;
 
    // VP unit
+   vp_fw_pkt_t i0_vpp_d, i1_vpp_d;
    vp_fb_pkt_t vp_fb_p_wb;
    
    vp_wrapper #(
@@ -565,15 +570,11 @@ module dec
       .fw_pc_aln_i      ({dec_i1_ib_pc_aln, dec_i0_ib_pc_aln}),
       .fw_gbh_aln_i     (64'b0),
       .fw_valid_aln_i   (2'b11),
-      .pred_conf_d_o    ({dec_i1_vp_conf_cnt_d, dec_i0_vp_conf_cnt_d}),
+      .pred_conf_d_o    ({i1_vp_conf_cnt_d, i0_vp_conf_cnt_d}),
       // .pred_valid_d_o   (), // TODO: delete?
-      // .pred_pc_e1_o     (), // TODO: delete?
-      .pred_result_e1_o ({dec_i1_vp_result_e1, dec_i0_vp_result_e1}),
-      // .pred_result_e1_o ({i1_result, i0_result}),
-      // .pred_conf_e1_o   (), // TODO: delete?
-      // .pred_valid_e1_o  (), // TODO: delete?
+      .pred_result_e1_o ({i1_vp_result_e1, i0_vp_result_e1}),
       // .pred_en_e1_i     ({i1_use_vp, i0_use_vp}),
-      .fb_pc_i          ({dec_i1_pc_wb, dec_i0_pc_wb}), // do loopback for debug, TODO: change to fb packet
+      .fb_pc_i          ({i1_pc_wb, i0_pc_wb}),
       .fb_actual_i      ({i1_result_wb_eff, i0_result_wb_eff}),
       .fb_mispredict_i  ({vp_fb_p_wb.i1_misp, vp_fb_p_wb.i0_misp}),
       .fb_conf_i        ({dec_i1_vp_conf_cnt_wb, dec_i0_vp_conf_cnt_wb}),

@@ -34,6 +34,16 @@ module dec_ib_ctl
    input br_pkt_t i0_brp,                      // i0 branch packet from aligner
    input br_pkt_t i1_brp,
 
+// vp
+   input logic [`P_CONF_WIDTH:0]    i0_vp_conf_cnt_d, // vp packet for ifu_i0_pc at d
+   input logic [`P_CONF_WIDTH:0]    i1_vp_conf_cnt_d, // vp packet for ifu_i1_pc at d
+   input logic [31:0]               i0_vp_result_e1,  // vp result for ifu_i0_pc at e1
+   input logic [31:0]               i1_vp_result_e1,  // vp result for ifu_i1_pc at e1
+   output logic [`P_CONF_WIDTH:0]   ib_i0_vp_conf_cnt_d, // i0 vp packet out from buffer
+   output logic [`P_CONF_WIDTH:0]   ib_i1_vp_conf_cnt_d, // i1 vp packet out from buffer
+   output logic [31:0]              ib_i0_vp_result_e1,  // i0 vp result out from buffer
+   output logic [31:0]              ib_i1_vp_result_e1,  // i1 vp result out from buffer
+
    input logic   ifu_i0_pc4,                   // i0 is 4B inst else 2B
    input logic   ifu_i1_pc4,
 
@@ -298,6 +308,11 @@ module dec_ib_ctl
    assign dec_i1_pc4_d = pc1[0];
    assign dec_i0_pc4_d = pc0[0];
 
+   // assign dec_i0_ib_pc_aln = ibwrite[0] ? pc0_in[31:1] : pc0[31:1];
+   // assign dec_i1_ib_pc_aln = ibwrite[1] ? pc1_in[31:1] : pc1[31:1];
+   assign dec_i0_ib_pc_aln = ifu_i0_pc[31:1];
+   assign dec_i1_ib_pc_aln = ifu_i1_pc[31:1];
+
    // branch prediction
 
    logic [$bits(br_pkt_t)-1:0] bp3_in,bp3,bp2_in,bp2,bp1_in,bp1,bp0_in,bp0;
@@ -360,7 +375,167 @@ module dec_ib_ctl
 
    rvdffe #(32) ib1ff (.*, .en(ibwrite[1]), .din(ib1_in[31:0]), .dout(ib1[31:0]));
 
+   // vp buffers
+   logic         write_i1_ib3_d1, write_i0_ib3_d1;
+   logic         write_i1_ib2_d1, write_i0_ib2_d1;
+   logic         write_i1_ib1_d1, write_i0_ib1_d1;
+   logic         write_i0_ib0_d1;
+   logic         write_i1_ib3_d2, write_i0_ib3_d2;
+   logic         write_i1_ib2_d2, write_i0_ib2_d2;
+   logic         write_i1_ib1_d2, write_i0_ib1_d2;
+   logic         write_i0_ib0_d2;
+   logic [3:0]   ibwrite_d1, ibwrite_d2;
+   logic         shift_ib1_ib0_d1, shift_ib2_ib1_d1, shift_ib3_ib2_d1;
+   logic         shift_ib2_ib0_d1;
+   logic         shift_ib3_ib1_d1;
+   logic         shift_ib1_ib0_d2, shift_ib2_ib1_d2, shift_ib3_ib2_d2;
+   logic         shift_ib2_ib0_d2;
+   logic         shift_ib3_ib1_d2;
+   rvdffe #(22) wrctlff (
+      .*, 
+      .en(~flush_final), 
+      .din({
+         write_i1_ib3,
+         write_i0_ib3,
+         write_i1_ib2,
+         write_i0_ib2,
+         write_i1_ib1,
+         write_i0_ib1,
+         write_i0_ib0,
+         write_i1_ib3_d1,
+         write_i0_ib3_d1,
+         write_i1_ib2_d1,
+         write_i0_ib2_d1,
+         write_i1_ib1_d1,
+         write_i0_ib1_d1,
+         write_i0_ib0_d1,
+         ibwrite,
+         ibwrite_d1
+      }), 
+      .dout({
+         write_i1_ib3_d1,
+         write_i0_ib3_d1,
+         write_i1_ib2_d1,
+         write_i0_ib2_d1,
+         write_i1_ib1_d1,
+         write_i0_ib1_d1,
+         write_i0_ib0_d1,
+         write_i1_ib3_d2,
+         write_i0_ib3_d2,
+         write_i1_ib2_d2,
+         write_i0_ib2_d2,
+         write_i1_ib1_d2,
+         write_i0_ib1_d2,
+         write_i0_ib0_d2,
+         ibwrite_d1,
+         ibwrite_d2
+      })
+   );
+   rvdffe #(10) shctlff (
+      .*, 
+      .en(~flush_final), 
+      .din({
+         shift_ib1_ib0,
+         shift_ib2_ib1,
+         shift_ib3_ib2,
+         shift_ib2_ib0,
+         shift_ib3_ib1,
+         shift_ib1_ib0_d1,
+         shift_ib2_ib1_d1,
+         shift_ib3_ib2_d1,
+         shift_ib2_ib0_d1,
+         shift_ib3_ib1_d1
+      }),
+      .dout({
+         shift_ib1_ib0_d1,
+         shift_ib2_ib1_d1,
+         shift_ib3_ib2_d1,
+         shift_ib2_ib0_d1,
+         shift_ib3_ib1_d1,
+         shift_ib1_ib0_d2,
+         shift_ib2_ib1_d2,
+         shift_ib3_ib2_d2,
+         shift_ib2_ib0_d2,
+         shift_ib3_ib1_d2
+      })
+   );
+   
+   logic [`P_CONF_WIDTH:0] vpc3_in, vpc3;
+   logic [`P_CONF_WIDTH:0] vpc2_in, vpc2;
+   logic [`P_CONF_WIDTH:0] vpc1_in, vpc1;
+   logic [`P_CONF_WIDTH:0] vpc0_in, vpc0;
+   if (DEC_INSTBUF_DEPTH==4) begin
+      assign vpc3_in = ({(`P_CONF_WIDTH+1){write_i0_ib3_d1}} & i0_vp_conf_cnt_d) |
+                       ({(`P_CONF_WIDTH+1){write_i1_ib3_d1}} & i1_vp_conf_cnt_d);
 
+      rvdffe #(`P_CONF_WIDTH+1) vpc3ff (.*, .en(ibwrite_d1[3]), .din(vpc3_in), .dout(vpc3));
+
+      assign vpc2_in = ({(`P_CONF_WIDTH+1){write_i0_ib2_d1}} & i0_vp_conf_cnt_d) |
+                       ({(`P_CONF_WIDTH+1){write_i1_ib2_d1}} & i1_vp_conf_cnt_d) |
+                       ({(`P_CONF_WIDTH+1){shift_ib3_ib2_d1}} & vpc3);
+
+      rvdffe #(`P_CONF_WIDTH+1) vpc2ff (.*, .en(ibwrite_d1[2]), .din(vpc2_in), .dout(vpc2));
+   end // if (DEC_INSTBUF_DEPTH==4)
+   else begin
+      assign vpc3 = '0;
+      assign vpc2 = '0;
+   end
+   assign vpc1_in = ({(`P_CONF_WIDTH+1){write_i0_ib1_d1}} & i0_vp_conf_cnt_d) |
+                    ({(`P_CONF_WIDTH+1){write_i1_ib1_d1}} & i1_vp_conf_cnt_d) |
+                    ({(`P_CONF_WIDTH+1){shift_ib2_ib1_d1}} & vpc2) |
+                    ({(`P_CONF_WIDTH+1){shift_ib3_ib1_d1}} & vpc3);
+
+   rvdffe #(`P_CONF_WIDTH+1) vpc1ff (.*, .en(ibwrite_d1[1]), .din(vpc1_in), .dout(vpc1));
+
+
+   assign vpc0_in = ({(`P_CONF_WIDTH+1){write_i0_ib0_d1}} & i0_vp_conf_cnt_d) |
+                    ({(`P_CONF_WIDTH+1){shift_ib1_ib0_d1}} & vpc1) |
+                    ({(`P_CONF_WIDTH+1){shift_ib2_ib0_d1}} & vpc2);
+
+   // rvdffe #(`P_CONF_WIDTH+1) vpc0ff (.*, .en(ibwrite_d1[0]), .din(vpc0_in), .dout(vpc0));
+   assign ib_i0_vp_conf_cnt_d = vpc0_in;
+   assign ib_i1_vp_conf_cnt_d = vpc1_in;
+
+
+   logic [31:0] vpr3_in, vpr3;
+   logic [31:0] vpr2_in, vpr2;
+   logic [31:0] vpr1_in, vpr1;
+   logic [31:0] vpr0_in, vpr0;
+   if (DEC_INSTBUF_DEPTH==4) begin
+      assign vpr3_in = ({32{write_i0_ib3_d2}} & i0_vp_result_e1) |
+                       ({32{write_i1_ib3_d2}} & i1_vp_result_e1);
+
+      rvdffe #(32) vpr3ff (.*, .en(ibwrite_d2[3]), .din(vpr3_in), .dout(vpr3));
+
+      assign vpr2_in = ({32{write_i0_ib2_d2}} & i0_vp_result_e1) |
+                       ({32{write_i1_ib2_d2}} & i1_vp_result_e1) |
+                       ({32{shift_ib3_ib2_d2}} & vpr3);
+
+      rvdffe #(32) vpr2ff (.*, .en(ibwrite_d2[2]), .din(vpr2_in), .dout(vpr2));
+   end // if (DEC_INSTBUF_DEPTH==4)
+   else begin
+      assign vpr3 = '0;
+      assign vpr2 = '0;
+   end
+   assign vpr1_in = ({32{write_i0_ib1_d2}} & i0_vp_result_e1) |
+                    ({32{write_i1_ib1_d2}} & i1_vp_result_e1) |
+                    ({32{shift_ib2_ib1_d2}} & vpr2) |
+                    ({32{shift_ib3_ib1_d2}} & vpr3);
+
+   rvdffe #(32) vpr1ff (.*, .en(ibwrite_d2[1]), .din(vpr1_in), .dout(vpr1));
+
+
+   assign vpr0_in = ({32{write_i0_ib0_d2}} & i0_vp_result_e1) |
+                    ({32{shift_ib1_ib0_d2}} & vpr1) |
+                    ({32{shift_ib2_ib0_d2}} & vpr2);
+
+   // rvdffe #(32) vpr0ff (.*, .en(ibwrite_d2[0]), .din(vpr0_in), .dout(vpr0));
+   assign ib_i0_vp_result_e1 = vpr0_in;
+   assign ib_i1_vp_result_e1 = vpr1_in;
+   
+   
+   
+   
 // GPR accesses
 
 // put reg to read on rs1
@@ -460,8 +635,5 @@ module dec_ib_ctl
 
    assign shift_ib2_ib0 = shift2 & ibval[2];
    assign shift_ib3_ib1 = shift2 & ibval[3];
-
-   assign dec_i0_ib_pc_aln = ibwrite[0] ? pc0_in[31:1] : pc0[31:1];
-   assign dec_i1_ib_pc_aln = ibwrite[1] ? pc1_in[31:1] : pc1[31:1];
 
 endmodule
