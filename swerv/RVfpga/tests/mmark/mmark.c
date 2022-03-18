@@ -6,6 +6,7 @@
    PRE_COMPILED_MSG("no platform was defined")
 #endif
 #include <psp_api.h>
+#include <time.h>
 
 #define GPIO_SWs    0x80001400
 #define GPIO_LEDs   0x80001404
@@ -94,10 +95,10 @@ void mulmark() {
     LdSt_beg = pspPerformanceCounterGet(D_PSP_COUNTER2);
     Inst_beg = pspPerformanceCounterGet(D_PSP_COUNTER3);
     
-    __asm("ldi t3 0x1");
-    __asm("ldi t4 0x1");
+    __asm("li t3, 0x1");
+    __asm("li t4, 0x1000");
     
-    for(i; i < 1000; i++) { // TODO: switch to asm
+    __asm("REPEAT:");
         __asm("mul t3, t3, t3");
         __asm("mul t3, t3, t3");
         __asm("mul t3, t3, t3");
@@ -108,7 +109,9 @@ void mulmark() {
         __asm("mul t3, t3, t3");
         __asm("mul t3, t3, t3");
         __asm("mul t3, t3, t3");
-    }
+        __asm("sub t4, t4, t3");
+        __asm("bne t4, zero, REPEAT");
+        __asm("nop");
 
     cyc_end = pspPerformanceCounterGet(D_PSP_COUNTER0);
     instr_end = pspPerformanceCounterGet(D_PSP_COUNTER1);
