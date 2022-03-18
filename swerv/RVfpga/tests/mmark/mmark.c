@@ -94,9 +94,20 @@ void mulmark() {
     LdSt_beg = pspPerformanceCounterGet(D_PSP_COUNTER2);
     Inst_beg = pspPerformanceCounterGet(D_PSP_COUNTER3);
     
+    __asm("ldi t3 0x1");
+    __asm("ldi t4 0x1");
+    
     for(i; i < 1000; i++) { // TODO: switch to asm
-        y *= x;
-        z *= y;
+        __asm("mul t3, t3, t3");
+        __asm("mul t3, t3, t3");
+        __asm("mul t3, t3, t3");
+        __asm("mul t3, t3, t3");
+        __asm("mul t3, t3, t3");
+        __asm("mul t3, t3, t3");
+        __asm("mul t3, t3, t3");
+        __asm("mul t3, t3, t3");
+        __asm("mul t3, t3, t3");
+        __asm("mul t3, t3, t3");
     }
 
     cyc_end = pspPerformanceCounterGet(D_PSP_COUNTER0);
@@ -109,5 +120,5 @@ void mulmark() {
     stop_time();
     total_time=get_time();
     
-    printfNexys("z = %d", z);
+    // printfNexys("z = %d", z);
 }
