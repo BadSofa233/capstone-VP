@@ -22,7 +22,7 @@ int LdSt_beg, LdSt_end;
 int Inst_beg, Inst_end;
 static clock_t start_time_val, stop_time_val;
 
-void mmark(void);
+void mulmark(void);
 
 void start_time(void) {
     uint32_t mcyclel;
@@ -68,18 +68,18 @@ int main(void)
         printfNexys("Invert any Switch to execute CoreMark");
    }
 
-   mmark();
+   mulmark();
 
-   // printfNexys("Cycles = %d", cyc_end-cyc_beg);
-   // printfNexys("Instructions = %d", instr_end-instr_beg);
-   // printfNexys("Data Bus Transactions = %d", LdSt_end-LdSt_beg);
-   // printfNexys("Inst Bus Transactions = %d", Inst_end-Inst_beg);
+   printfNexys("Cycles = %d", cyc_end-cyc_beg);
+   printfNexys("Instructions = %d", instr_end-instr_beg);
+   printfNexys("Data Bus Transactions = %d", LdSt_end-LdSt_beg);
+   printfNexys("Inst Bus Transactions = %d", Inst_end-Inst_beg);
 
    while(1);
 }
 
 /* perform actual benchmark */
-void mmark() {
+void mulmark() {
     clock_t total_time;
     int x = 1;
     int y = 1;
@@ -87,40 +87,13 @@ void mmark() {
     int i = 0;
 
     start_time();
-    
+
+    __asm("__perf_start:");
+
     cyc_beg = pspPerformanceCounterGet(D_PSP_COUNTER0);
     instr_beg = pspPerformanceCounterGet(D_PSP_COUNTER1);
     LdSt_beg = pspPerformanceCounterGet(D_PSP_COUNTER2);
     Inst_beg = pspPerformanceCounterGet(D_PSP_COUNTER3);
-    
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-
-    cyc_end = pspPerformanceCounterGet(D_PSP_COUNTER0);
-    instr_end = pspPerformanceCounterGet(D_PSP_COUNTER1);
-    LdSt_end = pspPerformanceCounterGet(D_PSP_COUNTER2);
-    Inst_end = pspPerformanceCounterGet(D_PSP_COUNTER3);
-
-    printfNexys("Cycles = %d", cyc_end-cyc_beg);
-    printfNexys("Instructions = %d", instr_end-instr_beg);
-    printfNexys("Data Bus Transactions = %d", LdSt_end-LdSt_beg);
-    printfNexys("Inst Bus Transactions = %d", Inst_end-Inst_beg);
-
-
-    __asm("__perf_start:");
-
-    // cyc_beg = pspPerformanceCounterGet(D_PSP_COUNTER0);
-    // instr_beg = pspPerformanceCounterGet(D_PSP_COUNTER1);
-    // LdSt_beg = pspPerformanceCounterGet(D_PSP_COUNTER2);
-    // Inst_beg = pspPerformanceCounterGet(D_PSP_COUNTER3);
     
     __asm("li t3, 0x1");
     __asm("li t4, 0x1000");
@@ -140,39 +113,12 @@ void mmark() {
         __asm("bne t4, zero, REPEAT");
         __asm("nop");
 
-    // cyc_end = pspPerformanceCounterGet(D_PSP_COUNTER0);
-    // instr_end = pspPerformanceCounterGet(D_PSP_COUNTER1);
-    // LdSt_end = pspPerformanceCounterGet(D_PSP_COUNTER2);
-    // Inst_end = pspPerformanceCounterGet(D_PSP_COUNTER3);
-    
-    __asm("__perf_end:");
-    
-    cyc_beg = pspPerformanceCounterGet(D_PSP_COUNTER0);
-    instr_beg = pspPerformanceCounterGet(D_PSP_COUNTER1);
-    LdSt_beg = pspPerformanceCounterGet(D_PSP_COUNTER2);
-    Inst_beg = pspPerformanceCounterGet(D_PSP_COUNTER3);
-    
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-    __asm("mul t3, t3, t3");
-
     cyc_end = pspPerformanceCounterGet(D_PSP_COUNTER0);
     instr_end = pspPerformanceCounterGet(D_PSP_COUNTER1);
     LdSt_end = pspPerformanceCounterGet(D_PSP_COUNTER2);
     Inst_end = pspPerformanceCounterGet(D_PSP_COUNTER3);
-
-    printfNexys("Cycles = %d", cyc_end-cyc_beg);
-    printfNexys("Instructions = %d", instr_end-instr_beg);
-    printfNexys("Data Bus Transactions = %d", LdSt_end-LdSt_beg);
-    printfNexys("Inst Bus Transactions = %d", Inst_end-Inst_beg);
     
+    __asm("__perf_end:");
 
     stop_time();
     total_time=get_time();
