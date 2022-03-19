@@ -4,6 +4,9 @@
 !/src/rvfpganexys.sv
 !/src/rvfpganexys.xdc
 !/src/SweRVolfSoC/
+!/src/OtherSources/
+/src/OtherSources/*
+!/src/OtherSources/clk_gen_nexys.v
 /src/SweRVolfSoC/*
 !/src/SweRVolfSoC/swervolf_core.v
 !/src/SweRVolfSoC/SweRVEh1CoreComplex/

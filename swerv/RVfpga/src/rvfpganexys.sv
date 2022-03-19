@@ -72,21 +72,23 @@ module rvfpganexys
    // vp
    wire      clk_ram;
    reg       rst_core; // stretched clk_ram synced reset
-   assign clk_ram = user_clk;
+   // assign clk_ram = user_clk;
    // rst sync, goes low at negedge of clk_core for multipumped RAM sync
    always @(posedge clk_ram) begin
-      if(rst_raw) begin
-         rst_core <= 1'b1;
-      end
-      else if(clk_core == 1'b0) begin
-         rst_core <= 1'b0;
-      end
+      // if(rst_raw) begin
+         // rst_core <= 1'b1;
+      // end
+      // else if(clk_core == 1'b0) begin
+         // rst_core <= 1'b0;
+      // end
+      rst_core <= rst_raw;
    end
 
    clk_gen_nexys clk_gen
      (.i_clk (user_clk),
       .i_rst (user_rst),
       .o_clk_core (clk_core),
+      .o_clk_ram  (clk_ram),
       // .o_rst_core (rst_core));
       .o_rst_core (rst_raw));
 
