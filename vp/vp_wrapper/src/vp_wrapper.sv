@@ -41,31 +41,31 @@ module vp_wrapper #(
     generate 
 
         if(P_ALGORITHM == "VTAGE") begin
-            vtage_top #(
-                // TODO: input parameters to vtage here...
-                .P_NUM_PRED         (2),
-                .P_GBH_LENGTH       (P_GBH_LENGTH),
-                .P_NUM_ENTRIES      (P_NUM_ENTRIES),
-                .P_CONF_THRES_WIDTH (P_CONF_THRES_WIDTH),
-                .P_HASH_LENGTH      (P_HASH_LENGTH)
-            ) vtage_top (
-                // TODO: IO signals here, connect wrapper's IO to VP IO
-                .fw_gbh_i           (fw_gbh_i),
-                .fw_get_i           (fw_get_i),
-                .fw_value_o         (fw_value_o),
-                .fw_conf_o          (fw_conf_o),
-                .fw_tag_o           (fw_tag_o),
-                .fw_useful_o        (fw_useful_o),
-                .fw_valid_o         (fw_valid_o),
-                .fb_incr_conf_i     (fb_incr_conf_i),
-                .fb_rst_conf_i      (fb_rst_conf_i),
-                .fb_incr_use_i      (fb_incr_use_i),
-                .fb_decr_use_i      (fb_decr_use_i),
-                .fb_load_tag_i      (fb_load_tag_i),
-                .fb_tag_i           (fb_tag_i),
-                .fb_load_value_i    (fb_load_value_i),
-                .fb_value_i         (fb_value_i)
-            );
+//            vtage_top #(
+//                // TODO: input parameters to vtage here...
+//                .P_NUM_PRED         (2),
+//                .P_GBH_LENGTH       (P_GBH_LENGTH),
+//                .P_NUM_ENTRIES      (P_NUM_ENTRIES),
+//                .P_CONF_THRES_WIDTH (P_CONF_THRES_WIDTH),
+//                .P_HASH_LENGTH      (P_HASH_LENGTH)
+//            ) vtage_top (
+//                // TODO: IO signals here, connect wrapper's IO to VP IO
+//                .fw_gbh_i           (fw_gbh_i),
+//                .fw_get_i           (fw_get_i),
+//                .fw_value_o         (fw_value_o),
+//                .fw_conf_o          (fw_conf_o),
+//                .fw_tag_o           (fw_tag_o),
+//                .fw_useful_o        (fw_useful_o),
+//                .fw_valid_o         (fw_valid_o),
+//                .fb_incr_conf_i     (fb_incr_conf_i),
+//                .fb_rst_conf_i      (fb_rst_conf_i),
+//                .fb_incr_use_i      (fb_incr_use_i),
+//                .fb_decr_use_i      (fb_decr_use_i),
+//                .fb_load_tag_i      (fb_load_tag_i),
+//                .fb_tag_i           (fb_tag_i),
+//                .fb_load_value_i    (fb_load_value_i),
+//                .fb_value_i         (fb_value_i)
+//            );
         end
         else if(P_ALGORITHM == "BASELINE") begin
         

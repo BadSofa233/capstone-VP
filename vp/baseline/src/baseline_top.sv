@@ -2,7 +2,7 @@
 // Author: Yuhan Li
 // Oct 30, 2021
 
-`default_nettype none
+// `default_nettype none
 
 `ifndef P_STORAGE_SIZE
 `define P_STORAGE_SIZE 2048
