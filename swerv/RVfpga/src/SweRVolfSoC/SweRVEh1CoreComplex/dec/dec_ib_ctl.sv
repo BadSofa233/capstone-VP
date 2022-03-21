@@ -492,9 +492,9 @@ module dec_ib_ctl
                     ({(`P_CONF_WIDTH+1){shift_ib1_ib0_d1}} & vpc1) |
                     ({(`P_CONF_WIDTH+1){shift_ib2_ib0_d1}} & vpc2);
 
-   // rvdffe #(`P_CONF_WIDTH+1) vpc0ff (.*, .en(ibwrite_d1[0]), .din(vpc0_in), .dout(vpc0));
-   assign ib_i0_vp_conf_cnt_d = vpc0_in;
-   assign ib_i1_vp_conf_cnt_d = vpc1_in;
+   rvdffe #(`P_CONF_WIDTH+1) vpc0ff (.*, .en(ibwrite_d1[0]), .din(vpc0_in), .dout(vpc0));
+   assign ib_i0_vp_conf_cnt_d = ibwrite_d1[0] ? vpc0_in : vpc0;
+   assign ib_i1_vp_conf_cnt_d = ibwrite_d1[1] ? vpc1_in : vpc1;
 
 
    logic [31:0] vpr3_in, vpr3;
@@ -529,9 +529,9 @@ module dec_ib_ctl
                     ({32{shift_ib1_ib0_d2}} & vpr1) |
                     ({32{shift_ib2_ib0_d2}} & vpr2);
 
-   // rvdffe #(32) vpr0ff (.*, .en(ibwrite_d2[0]), .din(vpr0_in), .dout(vpr0));
-   assign ib_i0_vp_result_e1 = vpr0_in;
-   assign ib_i1_vp_result_e1 = vpr1_in;
+   rvdffe #(32) vpr0ff (.*, .en(ibwrite_d2[0]), .din(vpr0_in), .dout(vpr0));
+   assign ib_i0_vp_result_e1 = ibwrite_d2[0] ? vpr0_in : vpr0;
+   assign ib_i1_vp_result_e1 = ibwrite_d2[1] ? vpr1_in : vpr1;
    
    
    
