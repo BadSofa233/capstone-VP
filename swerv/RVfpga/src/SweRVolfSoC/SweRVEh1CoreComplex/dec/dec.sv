@@ -529,10 +529,16 @@ module dec
    logic [`P_CONF_WIDTH:0]    ib_i1_vp_conf_cnt_d;
    logic [`P_CONF_WIDTH:0]    dec_i0_vp_conf_cnt_wb;
    logic [`P_CONF_WIDTH:0]    dec_i1_vp_conf_cnt_wb;
-   logic [31:0]               i0_result_wb;
-   logic [31:0]               i1_result_wb;
+   // logic [31:0]               i0_result_wb;
+   // logic [31:0]               i1_result_wb;
    logic [31:1]               i0_pc_wb;
    logic [31:1]               i1_pc_wb;
+   // logic [`P_CONF_WIDTH:0]    dec_i0_vp_conf_cnt_e4;
+   // logic [`P_CONF_WIDTH:0]    dec_i1_vp_conf_cnt_e4;
+   // logic [31:0]               i0_result_e4_final;
+   // logic [31:0]               i1_result_e4_final;
+   // logic [31:1]               i0_pc_e4;
+   // logic [31:1]               i1_pc_e4;
 
    logic                      i0_vp_misp_flush_e4;
    logic                      i1_vp_misp_flush_e4;
@@ -558,6 +564,7 @@ module dec
    // VP unit
    vp_fw_pkt_t i0_vpp_d, i1_vpp_d;
    vp_fb_pkt_t vp_fb_p_wb;
+   // vp_fb_pkt_t vp_fb_p_e4;
    
    vp_wrapper #(
       .P_ALGORITHM      ("BASELINE"),
@@ -575,10 +582,16 @@ module dec
       .pred_result_e1_o ({i1_vp_result_e1, i0_vp_result_e1}),
       // .pred_en_e1_i     ({i1_use_vp, i0_use_vp}),
       .fb_pc_i          ({i1_pc_wb, i0_pc_wb}),
-      .fb_actual_i      ({i1_result_wb_eff, i0_result_wb_eff}),
+      // .fb_pc_i          ({i1_pc_e4, i0_pc_e4}),
+      // .fb_actual_i      ({i1_result_wb_eff, i0_result_wb_eff}),
+      // .fb_actual_i      ({i1_result_e4_final, i0_result_e4_final}),
+      .fb_actual_i      ({dec_i1_wdata_wb, dec_i0_wdata_wb}),
       .fb_mispredict_i  ({vp_fb_p_wb.i1_misp, vp_fb_p_wb.i0_misp}),
       .fb_conf_i        ({dec_i1_vp_conf_cnt_wb, dec_i0_vp_conf_cnt_wb}),
       .fb_valid_i       ({vp_fb_p_wb.i1_valid, vp_fb_p_wb.i0_valid})
+      // .fb_mispredict_i  ({vp_fb_p_e4.i1_misp, vp_fb_p_e4.i0_misp}),
+      // .fb_conf_i        ({dec_i1_vp_conf_cnt_e4, dec_i0_vp_conf_cnt_e4}),
+      // .fb_valid_i       ({vp_fb_p_e4.i1_valid, vp_fb_p_e4.i0_valid})
    );
 
 

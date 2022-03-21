@@ -90,10 +90,12 @@ module dec_decode_ctl
    // update
    output logic [31:1] i0_pc_wb,
    output logic [31:1] i1_pc_wb,
+   // output logic [31:1] i0_pc_e4,
+   // output logic [31:1] i1_pc_e4,
    // output vp_fb_pkt_t   vp_fb_p_e4,                         // vp update control packet e4
    output vp_fb_pkt_t   vp_fb_p_wb,                         // vp update control packet wb
-   output logic [31:0]  i0_result_wb,  // vp actual result
-   output logic [31:0]  i1_result_wb,  // vp actual result
+   // output logic [31:0]  i0_result_wb,  // vp actual result
+   // output logic [31:0]  i1_result_wb,  // vp actual result
    // output logic [31:0]  i0_result_e4_final, 
    // output logic [31:0]  i1_result_e4_final,
    
@@ -327,7 +329,7 @@ module dec_decode_ctl
    logic [31:0]                      i1_result_e2;
    logic [31:0]        i0_result_e3, i1_result_e3;
    logic [31:0]        i0_result_e4, i1_result_e4;
-   // logic [31:0]        i0_result_wb, i1_result_wb;
+   logic [31:0]        i0_result_wb, i1_result_wb;
 
    logic [31:1]        i0_pc_e1, i1_pc_e1;
    logic [31:1]        i0_pc_e2, i1_pc_e2;
