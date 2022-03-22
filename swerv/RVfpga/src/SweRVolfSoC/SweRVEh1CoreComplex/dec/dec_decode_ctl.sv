@@ -669,6 +669,8 @@ module dec_decode_ctl
 
    assign dec_i0_rs1_use_vp = i0_rs1_mul_block_d & i0_dp.mul & i0_rs1_vp_avail_e1_e2;
    assign dec_i0_rs2_use_vp = i0_rs2_mul_block_d & i0_dp.mul & i0_rs2_vp_avail_e1_e2;
+   // assign dec_i0_rs1_use_vp = i0_dp.mul;
+   // assign dec_i0_rs2_use_vp = i0_dp.mul;
    assign dec_i1_rs1_use_vp = i1_rs1_mul_block_d & i1_dp.mul & i1_rs1_vp_avail_e1_e2;
    assign dec_i1_rs2_use_vp = i1_rs2_mul_block_d & i1_dp.mul & i1_rs2_vp_avail_e1_e2;
    assign vp_used = dec_i0_rs1_use_vp | dec_i0_rs2_use_vp | dec_i1_rs1_use_vp | dec_i1_rs2_use_vp;
@@ -677,11 +679,13 @@ module dec_decode_ctl
    assign dec_i0_vp_rs1_val_e1_in = i0_rs1_depend_i0_e1 ? ib_i0_vp_result_e1 : 
                                     i0_rs1_depend_i1_e1 ? ib_i1_vp_result_e1 :
                                     i0_rs1_depend_i0_e2 ? vp_p_e2.i0_result : vp_p_e2.i1_result;
+   // assign dec_i0_vp_rs1_val_e1_in = 32'b1;
                                     // i0_rs1_depend_i1_e2 ? vp_p_e2.i1_result;
    rvdffe #(32) i0rs1vpff (.*, .en(i0_e1_data_en), .din(dec_i0_vp_rs1_val_e1_in), .dout(dec_i0_vp_rs1_val_e1));
    assign dec_i0_vp_rs2_val_e1_in = i0_rs2_depend_i0_e1 ? ib_i0_vp_result_e1 : 
                                     i0_rs2_depend_i1_e1 ? ib_i1_vp_result_e1 :
                                     i0_rs2_depend_i0_e2 ? vp_p_e2.i0_result : vp_p_e2.i1_result;
+   // assign dec_i0_vp_rs2_val_e1_in = 32'b1;
                                     // i0_rs2_depend_i1_e2 ? vp_p_e2.i1_result;
    rvdffe #(32) i0rs2vpff (.*, .en(i0_e1_data_en), .din(dec_i0_vp_rs2_val_e1_in), .dout(dec_i0_vp_rs2_val_e1));
    // TODO: add i0_e1->i1_e1 vp selection
@@ -699,12 +703,16 @@ module dec_decode_ctl
    assign dec_vp_mul_way_e1 = vp_p_e1.mul_way;
    assign dec_mul_rs1_use_vp_e1 = vp_p_e1.mul_rs1_use_vp;
    assign dec_mul_rs2_use_vp_e1 = vp_p_e1.mul_rs2_use_vp;
+   // assign dec_vp_mul_way_e1 = vp_p_e1.mul_way;
+   // assign dec_mul_rs1_use_vp_e1 = 1'b1;
+   // assign dec_mul_rs2_use_vp_e1 = 1'b1;
    
    // vp decode
    always_comb begin
       // vp_p_d.i0_result = dec_i0_vp_result;
       vp_p_d.i0_result      = '0;
       vp_p_d.i0_conf        = ib_i0_vp_conf_cnt_d[`P_CONF_WIDTH];
+      // vp_p_d.i0_conf        = 1'b1;
       vp_p_d.i0_valid       = dec_i0_decode_d;
       // vp_p_d.i1_result = dec_i1_vp_result;
       vp_p_d.i1_result      = '0;
@@ -717,7 +725,8 @@ module dec_decode_ctl
       vp_p_d.mul_rs1_use_vp = dec_i0_mul_d ? dec_i0_rs1_use_vp : dec_i1_mul_d ? dec_i1_rs1_use_vp : 1'b0;
       vp_p_d.mul_rs2_use_vp = dec_i0_mul_d ? dec_i0_rs2_use_vp : dec_i1_mul_d ? dec_i1_rs2_use_vp : 1'b0;
    end
-   rvdffe #( $bits(vp_fw_pkt_t) ) vpe1ff (.*, .en(i0_e1_ctl_en), .din(vp_p_d),  .dout(vp_p_e1));
+   // rvdffe #( $bits(vp_fw_pkt_t) ) vpe1ff (.*, .en(i0_e1_ctl_en), .din(vp_p_d),  .dout(vp_p_e1));
+   rvdffe #( $bits(vp_fw_pkt_t) ) vpe1ff (.*, .en(i0_e1_data_en), .din(vp_p_d),  .dout(vp_p_e1));
    rvdffe #(`P_CONF_WIDTH + 1) vpci0e1ff (.*, .en(i0_e1_data_en), .din(ib_i0_vp_conf_cnt_d), .dout(dec_i0_vp_conf_cnt_e1));
    rvdffe #(`P_CONF_WIDTH + 1) vpci1e1ff (.*, .en(i1_e1_data_en), .din(ib_i1_vp_conf_cnt_d), .dout(dec_i1_vp_conf_cnt_e1));
    // vp e1
@@ -730,7 +739,8 @@ module dec_decode_ctl
       vp_p_e1_in.i0_used   = vp_used & (i0_rs1_depend_i0_e1 | i0_rs2_depend_i0_e1 | i1_rs1_depend_i0_e1 | i1_rs2_depend_i0_e1);
       vp_p_e1_in.i1_used   = vp_used & (i0_rs1_depend_i1_e1 | i0_rs2_depend_i1_e1 | i1_rs1_depend_i1_e1 | i1_rs2_depend_i1_e1);
    end
-   rvdffe #( $bits(vp_fw_pkt_t) ) vpe2ff (.*, .en(i0_e2_ctl_en), .din(vp_p_e1_in),  .dout(vp_p_e2));
+   // rvdffe #( $bits(vp_fw_pkt_t) ) vpe2ff (.*, .en(i0_e2_ctl_en), .din(vp_p_e1_in),  .dout(vp_p_e2));
+   rvdffe #( $bits(vp_fw_pkt_t) ) vpe2ff (.*, .en(i0_e2_data_en), .din(vp_p_e1_in),  .dout(vp_p_e2));
    rvdffe #(`P_CONF_WIDTH + 1) vpci0e2ff (.*, .en(i0_e2_data_en), .din(dec_i0_vp_conf_cnt_e1), .dout(dec_i0_vp_conf_cnt_e2));
    rvdffe #(`P_CONF_WIDTH + 1) vpci1e2ff (.*, .en(i1_e2_data_en), .din(dec_i1_vp_conf_cnt_e1), .dout(dec_i1_vp_conf_cnt_e2));
    // vp e2
@@ -744,7 +754,8 @@ module dec_decode_ctl
                              (vp_used & (i0_rs1_depend_i1_e2 | i0_rs2_depend_i1_e2 | i1_rs1_depend_i1_e2 | i1_rs2_depend_i1_e2));
 
    end
-   rvdffe #( $bits(vp_fw_pkt_t) ) vpe3ff (.*, .en(i0_e3_ctl_en), .din(vp_p_e2_in),  .dout(vp_p_e3));
+   // rvdffe #( $bits(vp_fw_pkt_t) ) vpe3ff (.*, .en(i0_e3_ctl_en), .din(vp_p_e2_in),  .dout(vp_p_e3));
+   rvdffe #( $bits(vp_fw_pkt_t) ) vpe3ff (.*, .en(i0_e3_data_en), .din(vp_p_e2_in),  .dout(vp_p_e3));
    rvdffe #(`P_CONF_WIDTH + 1) vpci0e3ff (.*, .en(i0_e3_data_en), .din(dec_i0_vp_conf_cnt_e2), .dout(dec_i0_vp_conf_cnt_e3));
    rvdffe #(`P_CONF_WIDTH + 1) vpci1e3ff (.*, .en(i1_e3_data_en), .din(dec_i1_vp_conf_cnt_e2), .dout(dec_i1_vp_conf_cnt_e3));
    // vp e3
@@ -758,7 +769,8 @@ module dec_decode_ctl
          vp_p_e3_in.i1_valid  = vp_p_e3.i1_valid & ~flush_final_e3 & ~flush_lower_wb;
       end
    end
-   rvdffe #( $bits(vp_fw_pkt_t) ) vpe4ff (.*, .en(i0_e4_ctl_en), .din(vp_p_e3_in),  .dout(vp_p_e4));
+   // rvdffe #( $bits(vp_fw_pkt_t) ) vpe4ff (.*, .en(i0_e4_ctl_en), .din(vp_p_e3_in),  .dout(vp_p_e4));
+   rvdffe #( $bits(vp_fw_pkt_t) ) vpe4ff (.*, .en(i0_e4_data_en), .din(vp_p_e3_in),  .dout(vp_p_e4));
    rvdffe #(`P_CONF_WIDTH + 1) vpci0e4ff (.*, .en(i0_e4_data_en), .din(dec_i0_vp_conf_cnt_e3), .dout(dec_i0_vp_conf_cnt_e4));
    rvdffe #(`P_CONF_WIDTH + 1) vpci1e4ff (.*, .en(i1_e4_data_en), .din(dec_i1_vp_conf_cnt_e3), .dout(dec_i1_vp_conf_cnt_e4));
    // vp e4
@@ -772,7 +784,8 @@ module dec_decode_ctl
       vp_p_e4_in.i0_valid  = (vp_p_e4.i1_valid & ~flush_lower_wb) | exu_div_finish;
       vp_p_e4_in.i1_valid  = vp_p_e4.i1_valid & ~flush_lower_wb;
    end
-   rvdffe #( $bits(vp_fw_pkt_t) ) vpwbff (.*, .en(i0_wb_ctl_en | exu_div_finish | div_wen_wb), .din(vp_p_e4_in),  .dout(vp_p_wb));
+   // rvdffe #( $bits(vp_fw_pkt_t) ) vpwbff (.*, .en(i0_wb_ctl_en | exu_div_finish | div_wen_wb), .din(vp_p_e4_in),  .dout(vp_p_wb));
+   rvdffe #( $bits(vp_fw_pkt_t) ) vpwbff (.*, .en(i0_wb_data_en | exu_div_finish | div_wen_wb), .din(vp_p_e4_in),  .dout(vp_p_wb));
    rvdffe #(`P_CONF_WIDTH + 1) vpci0wbff (.*, .en(i0_wb_data_en | exu_div_finish), .din(dec_i0_vp_conf_cnt_e4), .dout(dec_i0_vp_conf_cnt_wb));
    rvdffe #(`P_CONF_WIDTH + 1) vpci1wbff (.*, .en(i1_wb_data_en), .din(dec_i1_vp_conf_cnt_e4), .dout(dec_i1_vp_conf_cnt_wb));
 
@@ -782,9 +795,13 @@ module dec_decode_ctl
 
    assign i0_vp_misp_e4 = (i0_result_e4_eff != vp_p_e4.i0_result);
    assign i1_vp_misp_e4 = (i1_result_e4_eff != vp_p_e4.i1_result);
+   // assign i0_vp_misp_e4 = (i0_result_e4 != vp_p_e4.i0_result);
+   // assign i1_vp_misp_e4 = (i1_result_e4 != vp_p_e4.i1_result);
 
    assign i0_vp_misp_flush_e4 = i0_vp_misp_e4 & vp_p_e4.i0_used;
    assign i1_vp_misp_flush_e4 = i1_vp_misp_e4 & vp_p_e4.i1_used;
+   // assign i0_vp_misp_flush_e4 = 1'b0;
+   // assign i1_vp_misp_flush_e4 = 1'b0;
    
    // flush logic
    // logic e1_i0valid, e1_i1valid, e2_i0valid, e2_i1valid, e3_i0valid, e3_i1valid, e4_i0valid, e4_i1valid, wb_i0valid, wb_i1valid;
@@ -816,7 +833,8 @@ module dec_decode_ctl
       vp_fb_p_e4.i1_used    = vp_p_e4.i1_used;
       vp_fb_p_e4.i1_valid   = vp_p_e4.i1_valid & e4_i1valid;
    end
-   rvdffe #( $bits(vp_fb_pkt_t) ) vpfbff (.*, .en(i0_wb_ctl_en | exu_div_finish | div_wen_wb), .din(vp_fb_p_e4),  .dout(vp_fb_p_wb));
+   // rvdffe #( $bits(vp_fb_pkt_t) ) vpfbff (.*, .en(i0_wb_ctl_en | exu_div_finish | div_wen_wb), .din(vp_fb_p_e4),  .dout(vp_fb_p_wb));
+   rvdffe #( $bits(vp_fb_pkt_t) ) vpfbff (.*, .en(i0_wb_data_en | exu_div_finish | div_wen_wb), .din(vp_fb_p_e4),  .dout(vp_fb_p_wb));
    
    // vp debug
    logic i0_vp_e1_conf, i1_vp_e1_conf, i0_vp_e2_conf, i1_vp_e2_conf, i0_vp_e3_conf, i1_vp_e3_conf, i0_vp_e4_conf, i1_vp_e4_conf;
@@ -2185,6 +2203,7 @@ end : cam_array
    assign i0_rs1_mul_block_d_vp = i0_rs1_mul_block_d & ~(i0_dp.mul & i0_rs1_vp_avail_e1_e2); // don't block when vp available for MUL
    assign i0_rs2_mul_block_d_vp = i0_rs2_mul_block_d & ~(i0_dp.mul & i0_rs2_vp_avail_e1_e2); // don't block when vp available for MUL
    assign i0_mul_block_d_final = i0_rs1_mul_block_d_vp | i0_rs2_mul_block_d_vp;
+   // assign i0_mul_block_d_final = 1'b0;
 
    // assign i1_mul_block_d = (i1_not_alu_eff & i1_rs1_class_d.mul & i1_rs1_match_e1_e2) |
                            // (i1_not_alu_eff & i1_rs2_class_d.mul & i1_rs2_match_e1_e2);

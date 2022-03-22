@@ -1019,10 +1019,15 @@ module dec_tlu_ctl
    assign sel_npc_e4 = lsu_i0_rfnpc_dc4 | (lsu_i1_rfnpc_dc4 & tlu_i1_commit_cmt) | fence_i_e4 | (i_cpu_run_req_d1 & ~interrupt_valid);
    assign sel_npc_wb = (i_cpu_run_req_d1 & pmu_fw_tlu_halted_f) | pause_expired_e4;
 
+   // vp
+   logic i0_vp_misp_flush_e4_final; // flush pipeline due to vp mispredictions in i0
+   logic i1_vp_misp_flush_e4_final; // flush pipeline due to vp mispredictions in i1
+   assign i0_vp_misp_flush_e4_final = i0_vp_misp_flush_e4 & ~i0_trigger_hit_e4;
+   assign i1_vp_misp_flush_e4_final = i1_vp_misp_flush_e4 & ~trigger_hit_e4 & ~lsu_i0_rfnpc_dc4;
 
    assign synchronous_flush_e4 = i0_exception_valid_e4 | // exception
                                  i0_mp_e4 | i1_mp_e4 |  // bp mispredict
-                                 i0_vp_misp_flush_e4 | i1_vp_misp_flush_e4 | // vp mispredict
+                                 i0_vp_misp_flush_e4_final | i1_vp_misp_flush_e4_final | // vp mispredict
                                  rfpc_i0_e4 | rfpc_i1_e4 | // rfpc
                                  lsu_exc_valid_e4 |  // lsu exception in either pipe 0 or pipe 1
                                  fence_i_e4 |  // fence, a rfnpc
@@ -1048,9 +1053,9 @@ module dec_tlu_ctl
                                       ({31{~take_nmi & sel_npc_wb}} & npc_wb[31:1]) |
                                       ({31{~take_nmi & mret_e4 & wr_mepc_wb}} & dec_csr_wrdata_wb[31:1]) |
                                       // vp
-                                      ({31{~take_nmi & i0_vp_misp_flush_e4}} & i0_vp_flush_path_e4[31:1]) | // i0 vp misp flush
+                                      ({31{~take_nmi & i0_vp_misp_flush_e4_final}} & i0_vp_flush_path_e4[31:1]) | // i0 vp misp flush
                                       // TODO: investigate lsu_i0_exc_dc4
-                                      ({31{~take_nmi & ~i0_vp_misp_flush_e4 & i1_vp_misp_flush_e4 & ~rfpc_i0_e4 & ~lsu_i0_exc_dc4}} & i0_vp_flush_path_e4[31:1]) ); // i1 vp misp flush
+                                      ({31{~take_nmi & ~i0_vp_misp_flush_e4_final & i1_vp_misp_flush_e4_final & ~rfpc_i0_e4 & ~lsu_i0_exc_dc4}} & i0_vp_flush_path_e4[31:1]) ); // i1 vp misp flush
 
    rvdff #(31)  flush_lower_ff (.*, .clk(e4e5_int_clk),
                                   .din({tlu_flush_path_e4[31:1]}),
