@@ -1,5 +1,6 @@
 // this is the RTL for a vtage predictor back, which holds P_NUM_ENTRIES number of entries
 // this block controls the bus of the predictor
+// NB: baseline shall be in another separate module
 // Author: Yuhan Li
 // Nov 14, 2021
 
@@ -38,79 +39,95 @@ module vtage_bank #(
     parameter P_U_WIDTH = `P_U_WIDTH,
     localparam  LP_INDEX_WIDTH          = $clog2(P_NUM_ENTRIES)
 ) (
-    input logic clk_i,
-    input logic clk_ram_i,
-    input logic rst_i,
+    input  logic clk_i,
+    input  logic clk_ram_i,
+    input  logic rst_i,
     
-    input logic [P_NUM_PRED-1:0][LP_INDEX_WIDTH-1:0] fw_index_i,
-    input logic [P_NUM_PRED-1:0][P_TAG_WIDTH-1:0] fw_tag_i,
-    input logic [P_NUM_PRED-1:0] fw_valid_i,
+    input  logic [P_NUM_PRED-1:0][LP_INDEX_WIDTH-1:0]   fw_index_i,
+    input  logic [P_NUM_PRED-1:0][P_TAG_WIDTH-1:0]      fw_tag_i,
+    input  logic [P_NUM_PRED-1:0]                       fw_valid_i,
     
-    output logic [P_NUM_PRED-1:0][LP_INDEX_WIDTH-1:0] pred_result_o,
-    output logic [P_NUM_PRED-1:0][P_CONF_WIDTH:0] pred_conf_o,
-    output logic [P_NUM_PRED-1:0][P_TAG_WIDTH-1:0] pred_tag_o,
-    output logic [P_NUM_PRED-1:0][P_U_WIDTH-1:0] pred_useful_o,
-    output logic [P_NUM_PRED-1:0] pred_hit_o,
+    output logic [P_NUM_PRED-1:0][LP_INDEX_WIDTH-1:0]   pred_result_o,
+    output logic [P_NUM_PRED-1:0][P_CONF_WIDTH:0]       pred_conf_o,
+    output logic [P_NUM_PRED-1:0][P_TAG_WIDTH-1:0]      pred_tag_o,
+    output logic [P_NUM_PRED-1:0][P_U_WIDTH-1:0]        pred_useful_o,
+    output logic [P_NUM_PRED-1:0]                       pred_hit_o,
     
-    input   logic [P_NUM_PRED-1:0][31:0]                fb_actual_i,        // true execution result of the instruction
-    output  logic [P_NUM_PRED-1:0][P_CONF_WIDTH:0]      fb_conf_i,          // original confidence fb
-    output  logic [P_NUM_PRED-1:0][LP_INDEX_WIDTH-1:0]  fb_index_i,         // original tag
-    output  logic [P_NUM_PRED-1:0][P_TAG_WIDTH-1:0]     fb_tag_i,           // original tag
-    output  logic [P_NUM_PRED-1:0][P_U_WIDTH-1:0]       fb_useful_i,        // original usefulness
-    input   logic [P_NUM_PRED-1:0]                      fb_mispredict_i,    // indicates misprediction
-    input   logic [P_NUM_PRED-1:0]                      fb_valid_i          // valid qualifier of feedback interface
+    input  logic [P_NUM_PRED-1:0][31:0]                 fb_actual_i,        // true execution result of the instruction
+    input  logic [P_NUM_PRED-1:0][P_CONF_WIDTH:0]       fb_conf_i,          // original confidence fb
+    input  logic [P_NUM_PRED-1:0][LP_INDEX_WIDTH-1:0]   fb_index_i,         // original index
+    input  logic [P_NUM_PRED-1:0][P_TAG_WIDTH-1:0]      fb_tag_i,           // original tag
+    input  logic [P_NUM_PRED-1:0][P_U_WIDTH-1:0]        fb_useful_i,        // original usefulness
+    input  logic [P_NUM_PRED-1:0]                       fb_mispredict_i,    // indicates misprediction
+    input  logic [P_NUM_PRED-1:0]                       fb_valid_i          // valid qualifier of feedback interface
 );
 
-    vtage_entry_t [P_NUM_PRED-1:0] vtage_fw_entry;
-    vtage_entry_t [P_NUM_PRED-1:0] vtage_fb_entry;
+    logic [P_NUM_ENTRIES-1:0][P_TAG_WIDTH-1:0]      entry_fw_tag;
+    logic [P_NUM_ENTRIES-1:0][31:0]                 entry_pred_value;
+    logic [P_NUM_ENTRIES-1:0][P_CONF_WIDTH-1:0]     entry_pred_conf;
+    logic [P_NUM_ENTRIES-1:0][P_TAG_WIDTH-1:0]      entry_pred_tag;
+    logic [P_NUM_ENTRIES-1:0][P_U_WIDTH-1:0]        entry_pred_useful;
     
-    // vtage table
-    multiport_ram #(
-        .P_MEM_DEPTH        (P_NUM_ENTRIES),
-        .P_MEM_WIDTH        ($bits(vtage_entry_t)),
-        .P_SIM              (`P_SIM),
-        .P_METHOD           ("MULTIPUMPED")
-    ) vtage_table (
-        .clk_i              (clk_i),
-        .clk_mp_i           (clk_ram_i),
-        
-        .rda_addr_i         (fw_index_i[0]),
-        .rda_data_o         (vtage_fw_entry[0]),
-        
-        .rdb_addr_i         (fw_index_i[1]),
-        .rdb_data_o         (vtage_fw_entry[1]),
-        
-        .wra_addr_i         (fb_index_i[0]),
-        .wra_data_i         (vtage_fb_entry[0]),
-        .wra_valid_i        (fb_wen[0]),
-        
-        .wrb_addr_i         (fb_index_i[1]),
-        .wrb_data_i         (vtage_fb_entry[1]),
-        .wrb_valid_i        (fb_wen[1])
-    );
-
+    logic [P_NUM_ENTRIES-1:0][P_TAG_WIDTH-1:0]      entry_fb_tag;
+    logic [P_NUM_ENTRIES-1:0]                       entry_fb_tag_match;
+    logic [P_NUM_ENTRIES-1:0]                       entry_fb_alloc_avail;
+    
+    logic [P_NUM_ENTRIES-1:0]                       entry_ud_incr_conf;
+    logic [P_NUM_ENTRIES-1:0]                       entry_ud_rst_conf;
+    logic [P_NUM_ENTRIES-1:0]                       entry_ud_incr_use;
+    logic [P_NUM_ENTRIES-1:0]                       entry_ud_decr_use;
+    logic [P_NUM_ENTRIES-1:0]                       entry_ud_incr_conf;
+    logic [P_NUM_ENTRIES-1:0]                       entry_ud_rst_use;
+    logic [P_NUM_ENTRIES-1:0]                       entry_ud_load_tag;
+    logic [P_NUM_ENTRIES-1:0][P_TAG_WIDTH-1:0]      entry_ud_tag;
+    logic [P_NUM_ENTRIES-1:0]                       entry_ud_load_value;
+    logic [P_NUM_ENTRIES-1:0][LP_INDEX_WIDTH-1:0]   entry_ud_value;
+    
+    // generate
+        // for(genvar p = 0; p < P_NUM_PRED; p = p + 1) begin: gen_entry_sel
+            // assign entry_fw_tag[fw_index_i[p]] = fw_tag_i[p]; // send the two tags to entries
+        // end
+    // endgenerate
+    
     generate
-        if(P_BANK == 0) begin: gen_lvp_pred
-            for(int i = 0; i < P_NUM_PRED; i = i + 1) begin
-                assign pred_hit_o[i]        = 1'b1;
-                assign pred_result_o[i]     = vtage_fw_entry[i].value;
-                assign pred_conf_o[i]       = vtage_fw_entry[i].conf;
-                assign pred_tag_o[i]        = '0;
-                assign pred_useful_o[i]     = '0;
-            end
+        for(genvar i = 0; i < P_NUM_ENTRIES; i = i + 1) begin: gen_entries
+            vtage_entry #(
+                .LP_INDEX_WIDTH(LP_INDEX_WIDTH),
+                .P_CONF_WIDTH(P_CONF_WIDTH),
+                .P_TAG_WIDTH(P_TAG_WIDTH),
+                .P_U_WIDTH(P_U_WIDTH)
+            ) entry (
+                .clk_i(clk_i),
+                .rst_i(rst_i),
+                // .fw_tag_i(entry_fw_tag[i]),
+                // .fw_valid_i(1'b1),
+                .pred_value_o(entry_pred_value[i]),
+                .pred_conf_o(entry_pred_conf[i]),
+                .pred_tag_o(entry_pred_tag[i]),
+                .pred_useful_o(entry_pred_useful[i]),
+                .fb_tag_i(),
+                .fb_tag_match_o(),
+                .fb_alloc_avail_o(),
+                .ud_incr_conf_i(),
+                .ud_rst_conf_i(),
+                .ud_incr_use_i(),
+                .ud_decr_use_i(),
+                .ud_rst_use_i(),
+                .ud_load_tag_i(),
+                .ud_tag_i(),
+                .ud_load_value_i(),
+                .ud_value_i()
+            );
         end
-        else begin: gen_vtage_pred
-            logic [P_NUM_PRED-1:0][P_TAG_WIDTH-1:0] fw_tag_d1;
-            always_ff @(posedge clk_i) begin
-                fw_tag_d1 <= fw_tag_i;
-            end
-            for(int i = 0; i < P_NUM_PRED; i = i + 1) begin
-                assign pred_hit_o[i]        = fw_tag_d1[i] == vtage_fw_entry[i].tag;
-                assign pred_result_o[i]     = vtage_fw_entry[i].value;
-                assign pred_conf_o[i]       = vtage_fw_entry[i].conf;
-                assign pred_tag_o[i]        = vtage_fw_entry[i].tag;
-                assign pred_useful_o[i]     = vtage_fw_entry[i].u;
-            end
+    endgenerate
+    
+    generate
+        for(genvar p = 0; p < P_NUM_PRED; p = p + 1) begin: gen_entry_sel
+            assign pred_hit_o[p]    = fw_valid_i[p] && entry_pred_tag[fw_index_i[p]] == fw_tag_i[p]; // check if tags match
+            assign pred_value_o[p]  = entry_pred_value[fw_index_i[p]];
+            assign pred_conf_o[p]   = entry_pred_conf[fw_index_i[p]];
+            assign pred_tag_o[p]    = entry_pred_tag[fw_index_i[p]];
+            assign pred_useful_o[p] = entry_pred_useful[fw_index_i[p]];
         end
     endgenerate
 
