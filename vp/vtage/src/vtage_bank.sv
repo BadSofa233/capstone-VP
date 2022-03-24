@@ -135,8 +135,10 @@ module vtage_bank #(
 
     // fb input selection
     generate
-        for(genvar p = 0; p < P_NUM_PRED; p = p + 1) begin: gen_fb_in_sel
-            assign entry_fb_tag[fb_index_i[p]] = fb_tag_i[p];
+        always_comb begin
+            for(integer p = 0; p < P_NUM_PRED; p = p + 1) begin: gen_fb_in_sel
+                assign entry_fb_tag[fb_index_i[p]] = fb_tag_i[p];
+            end
         end
     endgenerate
     // fb output selection
@@ -148,18 +150,34 @@ module vtage_bank #(
     endgenerate
 
     // update selection
-    // TODO: zero out others
     generate
-        for(genvar p = 0; p < P_NUM_PRED; p = p + 1) begin: gen_ud_out_sel
-            assign entry_ud_incr_conf[ud_index_i[p]]    = ud_incr_conf_i[p];
-            assign entry_ud_rst_conf[ud_index_i[p]]     = ud_rst_conf_i[p];
-            assign entry_ud_incr_use[ud_index_i[p]]     = ud_incr_use_i[p];
-            assign entry_ud_decr_use[ud_index_i[p]]     = ud_decr_use_i[p];
-            assign entry_ud_rst_use[ud_index_i[p]]      = ud_rst_use_i[p];
-            assign entry_ud_load_tag[ud_index_i[p]]     = ud_load_tag_i[p];
-            assign entry_ud_tag[ud_index_i[p]]          = ud_tag_i[p];
-            assign entry_ud_load_value[ud_index_i[p]]   = ud_load_value_i[p];
-            assign entry_ud_value[ud_index_i[p]]        = ud_value_i[p];
+        always_comb begin
+            for(integer i = 0; i < P_NUM_ENTRIES; i = i + 1) begin: gen_ud_in_sel
+                for(genvar p = 0; p < P_NUM_PRED; p = p + 1) begin
+                    if(ud_index_i[p] == i) begin
+                        entry_ud_incr_conf[i]   = ud_incr_conf_i[p];
+                        entry_ud_rst_conf[i]    = ud_rst_conf_i[p];
+                        entry_ud_incr_use[i]    = ud_incr_use_i[p];
+                        entry_ud_decr_use[i]    = ud_decr_use_i[p];
+                        entry_ud_rst_use[i]     = ud_rst_use_i[p];
+                        entry_ud_load_tag[i]    = ud_load_tag_i[p];
+                        entry_ud_tag[i]         = ud_tag_i[p];
+                        entry_ud_load_value[i]  = ud_load_value_i[p];
+                        entry_ud_value[i]       = ud_value_i[p];
+                    end
+                    else begin
+                        entry_ud_incr_conf[i]   = '0;
+                        entry_ud_rst_conf[i]    = '0;
+                        entry_ud_incr_use[i]    = '0;
+                        entry_ud_decr_use[i]    = '0;
+                        entry_ud_rst_use[i]     = '0;
+                        entry_ud_load_tag[i]    = '0;
+                        entry_ud_tag[i]         = '0;
+                        entry_ud_load_value[i]  = '0;
+                        entry_ud_value[i]       = '0;
+                    end
+                end
+            end
         end
     endgenerate
 
