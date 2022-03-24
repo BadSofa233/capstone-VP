@@ -126,6 +126,10 @@ module vtage_top #(
     logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0][P_U_WIDTH-1:0]       bank_fw_index; // lookup_index delayed 1
     logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0]                      bank_fw_hit; // prediction tag match
     
+    // suppress prediction for 128 cycles after misp
+    logic [7:0]                                                 last_misp_cycles;
+    logic [P_NUM_PRED-1:0]                                      pred_misp_supress;
+    
     // feedback signals
     logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0][P_TAG_WIDTH-1:0]     bank_fb_tag;
     logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0]                      bank_fb_match;
@@ -240,6 +244,17 @@ module vtage_top #(
     assign pred_conf_o          = bank_fw_conf[pred_bank_sel];
     assign pred_useful_o        = bank_fw_u[pred_bank_sel];
     assign pred_tag_o           = bank_fw_tag[pred_bank_sel];
+    
+    // suppress prediction for 128 cycles after misp
+    always_ff @(posedge clk_i) begin
+        if(rst_i | (|fb_mispredict_i)) begin
+            last_misp_cycles <= '0;
+        end
+        else if(~last_misp_cycles[7]) begin
+            last_misp_cycles <= last_misp_cycles + 1'b1;
+        end
+    end
+    assign pred_valid_o = last_misp_cycles[7];
     
     // update signal selection
     generate
