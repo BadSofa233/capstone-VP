@@ -143,7 +143,7 @@ module vtage_top #(
     logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0][P_TAG_WIDTH-1:0]     ud_tag;
     logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0]                      ud_ct_load_value;
     logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0][LP_INDEX_WIDTH-1:0]  ud_value; // new pointer to a value table entry
-    logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0][LP_INDEX_WIDTH-1:0]  bank_ud_ct_index;
+    logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0][LP_INDEX_WIDTH-1:0]  bank_ud_index;
     logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0]                      bank_ud_incr_conf;
     logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0]                      bank_ud_rst_conf;
     logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0]                      bank_ud_incr_use;
@@ -151,7 +151,7 @@ module vtage_top #(
     logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0]                      bank_ud_rst_use;
     logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0]                      bank_ud_load_tag;
     logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0][P_TAG_WIDTH-1:0]     bank_ud_tag;
-    logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0]                      bank_ud_ct_load_value;
+    logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0]                      bank_ud_load_value;
     logic [P_NUM_BANK-1:0][P_NUM_PRED-1:0][LP_INDEX_WIDTH-1:0]  bank_ud_value; // new pointer to a value table entry
     logic [P_NUM_PRED-1:0][LP_INDEX_WIDTH-1:0]                  ud_vt_index;
     logic [P_NUM_PRED-1:0][31:0]                                ud_vt_value;
@@ -185,7 +185,18 @@ module vtage_top #(
                 .fb_index_i                     (fb_index_i[bank]),
                 .fb_tag_i                       (bank_fb_tag[bank]),
                 .fb_tag_match_o                 (bank_fb_match[bank]),
-                .fb_alloc_avail_o               (bank_fb_alloc_avail[bank])
+                .fb_alloc_avail_o               (bank_fb_alloc_avail[bank]),
+                
+                .ud_index_i                     (bank_ud_index[bank]),
+                .ud_incr_conf_i                 (bank_ud_incr_conf[bank]),
+                .ud_rst_conf_i                  (bank_ud_rst_conf[bank]),
+                .ud_incr_use_i                  (bank_ud_incr_use[bank]),
+                .ud_decr_use_i                  (bank_ud_decr_use[bank]),
+                .ud_rst_use_i                   (bank_ud_rst_use[bank]),
+                .ud_load_tag_i                  (bank_ud_load_tag[bank]),
+                .ud_tag_i                       (bank_ud_tag[bank]),
+                .ud_load_value_i                (bank_ud_load_value[bank]),
+                .ud_value_i                     (bank_ud_value[bank])
             );
         end
     endgenerate
@@ -231,7 +242,38 @@ module vtage_top #(
     assign pred_tag_o           = bank_fw_tag[pred_bank_sel];
     
     // update signal selection
-    // TODO: assign ud_* to bank_ud_*
+    generate
+        always_comb begin
+            for(integer i = 0; i < P_NUM_BANK; i = i + 1) begin: gen_bank_ud_sel
+                for(genvar p = 0; p < P_NUM_PRED; p = p + 1) begin
+                    if(ud_bank_sel[p] == i) begin
+                        bank_ud_index[i]        = ud_ct_index[p];
+                        bank_ud_incr_conf[i]    = ud_incr_conf[p];
+                        bank_ud_rst_conf[i]     = ud_rst_conf[p];
+                        bank_ud_incr_use[i]     = ud_incr_use[p];
+                        bank_ud_decr_use[i]     = ud_decr_use[p];
+                        bank_ud_rst_use[i]      = ud_rst_use[p];
+                        bank_ud_load_tag[i]     = ud_load_tag[p];
+                        bank_ud_tag[i]          = ud_tag[p];
+                        bank_ud_load_value[i]   = ud_load_value[p];
+                        bank_ud_value[i]        = ud_ct_value[p];
+                    end
+                    else begin
+                        bank_ud_index[i]        = '0;
+                        bank_ud_incr_conf[i]    = '0;
+                        bank_ud_rst_conf[i]     = '0;
+                        bank_ud_incr_use[i]     = '0;
+                        bank_ud_decr_use[i]     = '0;
+                        bank_ud_rst_use[i]      = '0;
+                        bank_ud_load_tag[i]     = '0;
+                        bank_ud_tag[i]          = '0;
+                        bank_ud_load_value[i]   = '0;
+                        bank_ud_value[i]        = '0;
+                    end
+                end
+            end
+        end
+    endgenerate
     
     // TODO: output all prediction results?
     // maybe not, because we only care about the pred with the highest gbh
@@ -243,7 +285,7 @@ module vtage_top #(
     // logic [P_NUM_PRED-1:0][P_U_WIDTH-1:0]       bank_fw_index; // lookup_index delayed 1
     
     // value table lookup
-    // TODO: vt u and bank u
+    // TODO: vt u
     logic [P_NUM_PRED-1:0][P_U_WIDTH-1:0]   pred_vt_u;
     vtage_value_table #(
         .P_NUM_PRED                         (P_NUM_PRED),
@@ -268,12 +310,12 @@ module vtage_top #(
     
     // update unit
     vtage_update_unit #(
-        .P_NUM_PRED (P_NUM_PRED),
-        .LP_INDEX_WIDTH (LP_INDEX_WIDTH),
-        .LP_BANK_SEL_WIDTH (LP_BANK_SEL_WIDTH),
-        .P_CONF_WIDTH                   (P_CONF_WIDTH),
-        .P_TAG_WIDTH                    (P_TAG_WIDTH),
-        .P_U_WIDTH                      (P_U_WIDTH)
+        .P_NUM_PRED                         (P_NUM_PRED),
+        .LP_INDEX_WIDTH                     (LP_INDEX_WIDTH),
+        .LP_BANK_SEL_WIDTH                  (LP_BANK_SEL_WIDTH),
+        .P_CONF_WIDTH                       (P_CONF_WIDTH),
+        .P_TAG_WIDTH                        (P_TAG_WIDTH),
+        .P_U_WIDTH                          (P_U_WIDTH)
     ) vtage_update_unit (
         .clk_i                              (clk_i),
         .rst_i                              (rst_i),
@@ -292,15 +334,16 @@ module vtage_top #(
         .bank_fb_alloc_avail_i              (bank_fb_alloc_avail), // 0th fb cycle
         
         .ud_bank_sel_o                      (ud_bank_sel),
-        .ud_ct_value_o                      (ud_ct_value),
         .ud_incr_conf_o                     (ud_incr_conf),
         .ud_rst_conf_o                      (ud_rst_conf),
         .ud_incr_use_o                      (ud_incr_use),
         .ud_decr_use_o                      (ud_decr_use),
         .ud_rst_use_o                       (ud_rst_use),
         .ud_ct_index_o                      (ud_ct_index),
+        .ud_load_tag_o                      (ud_load_tag),
         .ud_tag_o                           (ud_tag),
-        .ud_ct_useful_o                     (ud_ct_useful),
+        .ud_load_value_o                    (ud_load_value),
+        .ud_ct_value_o                      (ud_ct_value),
         
         .ud_vt_index_o                      (ud_vt_index),
         .ud_vt_value_o                      (ud_vt_value),
