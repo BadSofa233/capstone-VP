@@ -6,9 +6,9 @@
 
 `default_nettype none
 
-`ifndef P_BANK
-`define P_BANK 0
-`endif
+// `ifndef P_BANK
+// `define P_BANK 0
+// `endif
 
 `ifndef P_NUM_PRED
 `define P_NUM_PRED 2
