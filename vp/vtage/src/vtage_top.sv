@@ -326,8 +326,8 @@ module vtage_top #(
     // update unit
     vtage_update_unit #(
         .P_NUM_PRED                         (P_NUM_PRED),
-        .LP_INDEX_WIDTH                     (LP_INDEX_WIDTH),
-        .LP_BANK_SEL_WIDTH                  (LP_BANK_SEL_WIDTH),
+        .P_NUM_BANK                         (P_NUM_BANK),
+        .P_NUM_ENTRIES                      (P_NUM_ENTRIES),
         .P_CONF_WIDTH                       (P_CONF_WIDTH),
         .P_TAG_WIDTH                        (P_TAG_WIDTH),
         .P_U_WIDTH                          (P_U_WIDTH)
@@ -342,7 +342,6 @@ module vtage_top #(
         .fb_tag_i                           (fb_tag_i),
         .fb_useful_i                        (fb_useful_i),
         .fb_mispredict_i                    (fb_mispredict_i),
-        .fb_bank_i                          (fb_bank_i),
         .fb_valid_i                         (fb_valid_i),
         
         .bank_fb_match_i                    (bank_fb_match), // 0th fb cycle
