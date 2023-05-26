@@ -113,6 +113,7 @@ module baseline_top #(
             ) value_table (
                 .clk_i              (clk_i),
                 .clk_mp_i           (clk_ram_i),
+                .rst_i              (rst_i),
                 .rda_addr_i         (fw_pc_i[P_INDEX_WIDTH:1]),
                 .rdb_addr_i         ({P_INDEX_WIDTH{1'b0}}),
                 .rda_data_o         (pred_result_o),
@@ -133,6 +134,7 @@ module baseline_top #(
             ) confidence_table (
                 .clk_i              (clk_i),
                 .clk_mp_i           (clk_ram_i),
+                .rst_i              (rst_i),
                 .rda_addr_i         (fw_pc_i[P_INDEX_WIDTH:1]),
                 .rdb_addr_i         ({P_INDEX_WIDTH{1'b0}}),
                 .rda_data_o         (pred_conf_o),
@@ -154,6 +156,7 @@ module baseline_top #(
             ) value_table (
                 .clk_i              (clk_i),
                 .clk_mp_i           (clk_ram_i),
+                .rst_i              (rst_i),
                 .rda_addr_i         (fw_pc_i[0][P_INDEX_WIDTH:1]),
                 .rdb_addr_i         (fw_pc_i[1][P_INDEX_WIDTH:1]),
                 .rda_data_o         (pred_result_o[0]),
@@ -174,6 +177,7 @@ module baseline_top #(
             ) confidence_table (
                 .clk_i              (clk_i),
                 .clk_mp_i           (clk_ram_i),
+                .rst_i              (rst_i),
                 .rda_addr_i         (fw_pc_i[0][P_INDEX_WIDTH:1]),
                 .rdb_addr_i         (fw_pc_i[1][P_INDEX_WIDTH:1]),
                 .rda_data_o         (pred_conf_o[0]),
