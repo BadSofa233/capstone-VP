@@ -320,10 +320,8 @@ int random_test(Baseline_top_tb & dut, int cycles) {
     for(int i = 0; i < cycles; i++) {
         rand_result = rand();
         rand_pred = rand() & 1;
-        std::random_device rd;  // obtain a random number from hardware
-        std::mt19937 eng(rd()); // seed the generator
-        std::uniform_int_distribution<> distr(1, 10000000); 
-        int pc_in = distr(eng);
+        
+        int pc_in = rand();
         //
         dut.write_fw_pc_i(pc_in);
         dut.write_fw_valid_i(0b11);
