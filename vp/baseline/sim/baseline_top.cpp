@@ -84,7 +84,7 @@ int main(int argc, char **argv, char **env) {
     
     conflict_test(dut, pc, cycles, P_CONF_WIDTH);
     
-    // random_test(dut, cycles);
+    random_test(dut, cycles);
     
     return 0;
     
@@ -305,6 +305,15 @@ int conflict_test(Baseline_top_tb & dut, int pc, int cycles, int P_CONF_WIDTH) {
 }
 
 int random_test(Baseline_top_tb & dut, int cycles) {
+    uint64_t rand_result;
+    unsigned rand_pred;
+    unsigned pred_result;
+    uint64_t pc_in;
+    uint64_t fb_actual;
+    unsigned fb_valid;
+    unsigned fb_mispredict;
+    unsigned fb_conf;
+    cycles = 100;
     random_device rd;  // obtain a random number from hardware
     mt19937 eng(rd()); // seed the generator
     uniform_int_distribution<> distr(1, 10000000); // define the range
