@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
-using namespace std;
+
 
 int debug_test(Baseline_top_tb & dut, int P_CONF_WIDTH); 
 int confidence_test(Baseline_top_tb & dut, int pc, int cycles); 
@@ -315,13 +315,14 @@ int random_test(Baseline_top_tb & dut, int cycles) {
     unsigned fb_mispredict;
     unsigned fb_conf;
     cycles = 100;
-    random_device rd;  // obtain a random number from hardware
-    mt19937 eng(rd()); // seed the generator
-    uniform_int_distribution<> distr(1, 10000000); // define the range
+    
      // generate numbers
     for(int i = 0; i < cycles; i++) {
         rand_result = rand();
         rand_pred = rand() & 1;
+        std::random_device rd;  // obtain a random number from hardware
+        std::mt19937 eng(rd()); // seed the generator
+        std::uniform_int_distribution<> distr(1, 10000000); 
         int pc_in = distr(eng);
         //
         dut.write_fw_pc_i(pc_in);
