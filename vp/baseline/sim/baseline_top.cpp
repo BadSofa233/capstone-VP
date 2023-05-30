@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+using namespace std;
 
 int debug_test(Baseline_top_tb & dut, int P_CONF_WIDTH); 
 int confidence_test(Baseline_top_tb & dut, int pc, int cycles); 
