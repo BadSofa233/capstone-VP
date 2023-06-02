@@ -360,31 +360,31 @@ int random_test(Baseline_top_tb & dut, int cycles) {
             dut.write_fb_valid_i(fb_valid);
             dut.write_fb_conf_i(fb_conf);
         }else if (rand_flg == 3){
-            // pred_result = dut.read_pred_result_o(false);
-            // flg = rand() % 1;
-            // fb_valid = flg ? 0b00 : 0b10;
-            // fb_actual=    rand_result;
-            // fb_mispredict   = pred_result == rand_result ? 0 : 0b11;
-            // fb_conf         = dut.read_pred_conf_o(false);
-            // dut.write_fb_pc_i(pc_in);
-            // dut.write_fb_mispredict_i(fb_mispredict); // random misp
-            // dut.write_fb_actual_i(fb_actual);
-            // dut.write_fb_valid_i(fb_valid);
-            // dut.write_fb_conf_i(fb_conf);
+            pred_result = dut.read_pred_result_o(false);
+            flg = rand() % 1;
+            fb_valid = flg ? 0b00 : 0b01;
+            fb_actual=    rand_result;
+            fb_mispredict   = pred_result == rand_result ? 0 : 0b11;
+            fb_conf         = dut.read_pred_conf_o(false);
+            dut.write_fb_pc_i(pc_in);
+            dut.write_fb_mispredict_i(fb_mispredict); // random misp
+            dut.write_fb_actual_i(fb_actual);
+            dut.write_fb_valid_i(fb_valid);
+            dut.write_fb_conf_i(fb_conf);
 
-            // //
-            // //rand_result = rand();
-            // pred_result = dut.read_pred_result_o(false) >> 32;
-            // int flg = rand() % 1;
-            // fb_valid = flg ? 0b00 : 0b01;
-            // fb_actual = rand_result << 32;
-            // fb_mispredict   = pred_result == rand_result ? 0 : 0b11;
-            // fb_conf         = dut.read_pred_conf_o(false);
-            // dut.write_fb_pc_i(pc_in);
-            // dut.write_fb_mispredict_i(fb_mispredict); // random misp
-            // dut.write_fb_actual_i(fb_actual);
-            // dut.write_fb_valid_i(fb_valid);
-            // dut.write_fb_conf_i(fb_conf);
+            //
+            //rand_result = rand();
+            pred_result = dut.read_pred_result_o(false) >> 32;
+            int flg = rand() % 1;
+            fb_valid = flg ? 0b00 : 0b10;
+            fb_actual = rand_result << 32;
+            fb_mispredict   = pred_result == rand_result ? 0 : 0b11;
+            fb_conf         = dut.read_pred_conf_o(false);
+            dut.write_fb_pc_i(pc_in);
+            dut.write_fb_mispredict_i(fb_mispredict); // random misp
+            dut.write_fb_actual_i(fb_actual);
+            dut.write_fb_valid_i(fb_valid);
+            dut.write_fb_conf_i(fb_conf);
         }
         
 
