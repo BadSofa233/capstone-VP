@@ -319,13 +319,8 @@ int random_test(Baseline_top_tb & dut, int cycles) {
      // generate numbers
     for(int i = 0; i < cycles; i++) {
         rand_result = rand();
-        int rand_flg = rand() % 4; // random from 0 to 3
-        int flg =0;
-
-
-
-        //rand_pred = rand() & 1;
-        
+        int rand_flg = rand() % 3 + 1; // random from 1 to 3
+        int flg;   
         int pc_in = rand();
         
         dut.write_fw_pc_i(pc_in);
@@ -333,33 +328,31 @@ int random_test(Baseline_top_tb & dut, int cycles) {
         
         dut.tick();
 
-        if (rand_flg == 0) {
-
-        }else if (rand_flg == 1){
+        if (rand_flg == 0b10){
             pred_result = dut.read_pred_result_o(false) >> 32;
-            flg = rand() % 1;
+            flg = rand() & 1;
             fb_valid = flg ? 0b00 : 0b10;
             fb_actual = rand_result << 32;
-            fb_mispredict   = pred_result == rand_result ? 0 : 0b11;
+            fb_mispredict   = pred_result == rand_result ? 0 : 0b10;
             fb_conf         = dut.read_pred_conf_o(false);
             dut.write_fb_pc_i(pc_in);
             dut.write_fb_mispredict_i(fb_mispredict); // random misp
             dut.write_fb_actual_i(fb_actual);
             dut.write_fb_valid_i(fb_valid);
             dut.write_fb_conf_i(fb_conf);
-        }else if (rand_flg == 2){
+        }else if (rand_flg == 0b01){
             pred_result = dut.read_pred_result_o(false);
-            flg = rand() % 1;
+            flg = rand() & 1;
             fb_valid = flg ? 0b00 : 0b01;
             fb_actual=    rand_result;
-            fb_mispredict   = pred_result == rand_result ? 0 : 0b11;
+            fb_mispredict   = pred_result == rand_result ? 0 : 0b01;
             fb_conf         = dut.read_pred_conf_o(false);
             dut.write_fb_pc_i(pc_in);
             dut.write_fb_mispredict_i(fb_mispredict); // random misp
             dut.write_fb_actual_i(fb_actual);
             dut.write_fb_valid_i(fb_valid);
             dut.write_fb_conf_i(fb_conf);
-        }else if (rand_flg == 3){
+        }else if (rand_flg == 0b11){
             // pred_result = (dut.read_pred_result_o(false) >> 32) | dut.read_pred_result_o(false);
             // int flg2 = rand() % 4; // random from 00 01 10 11 
             // fb_valid = flg2;
