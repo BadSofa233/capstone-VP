@@ -338,7 +338,7 @@ int random_test(Baseline_top_tb & dut, int cycles) {
         }else if (rand_flg == 1){
             pred_result = dut.read_pred_result_o(false) >> 32;
             flg = rand() % 1;
-            fb_valid = flg ? 0b00 : 0b01;
+            fb_valid = flg ? 0b00 : 0b10;
             fb_actual = rand_result << 32;
             fb_mispredict   = pred_result == rand_result ? 0 : 0b11;
             fb_conf         = dut.read_pred_conf_o(false);
@@ -350,7 +350,7 @@ int random_test(Baseline_top_tb & dut, int cycles) {
         }else if (rand_flg == 2){
             pred_result = dut.read_pred_result_o(false);
             flg = rand() % 1;
-            fb_valid = flg ? 0b00 : 0b10;
+            fb_valid = flg ? 0b00 : 0b01;
             fb_actual=    rand_result;
             fb_mispredict   = pred_result == rand_result ? 0 : 0b11;
             fb_conf         = dut.read_pred_conf_o(false);
