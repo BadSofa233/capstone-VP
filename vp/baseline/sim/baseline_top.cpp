@@ -360,10 +360,10 @@ int random_test(Baseline_top_tb & dut, int cycles) {
             dut.write_fb_valid_i(fb_valid);
             dut.write_fb_conf_i(fb_conf);
         }else if (rand_flg == 3){
-            pred_result = dut.read_pred_result_o(false) >> 32 | dut.read_pred_result_o(false);
-            int flg2 = rand() % 4;
+            pred_result = (dut.read_pred_result_o(false) >> 32) | dut.read_pred_result_o(false);
+            int flg2 = rand() % 4; // random from 00 01 10 11 
             fb_valid = flg2;
-            fb_actual=    rand_result << 32 | rand_result;
+            fb_actual=    (rand_result << 32) | rand_result;
             fb_mispredict   = pred_result == rand_result ? 0 : 0b11;
             fb_conf         = dut.read_pred_conf_o(false);
             dut.write_fb_pc_i(pc_in);
