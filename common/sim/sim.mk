@@ -26,9 +26,9 @@ executable: verilate testbench cmodel
 
 # compiles the testbench
 testbench: $(SRC_DIR)/$(RTL_FILES)
-	@printf "\nGenerating testbench...\n\n"
-	dos2unix $(SCRIPT_DIR)/generate_testbench.sh
-	bash $(SCRIPT_DIR)/generate_testbench.sh $(SRC_DIR) $(MODULE) $(SIM_DIR)
+# 	@printf "\nGenerating testbench...\n\n"
+# 	dos2unix $(SCRIPT_DIR)/generate_testbench.sh
+# 	bash $(SCRIPT_DIR)/generate_testbench.sh $(SRC_DIR) $(MODULE) $(SIM_DIR)
 
 cmodel: $(CM_FILES)
 	@printf "\nCompiling cmodel...\n\n"

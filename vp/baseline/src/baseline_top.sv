@@ -57,7 +57,7 @@ module baseline_top #(
     input   logic [P_NUM_PRED-1:0][31:1]                    fw_pc_i,        // current instruction address
     input   logic [P_NUM_PRED-1:0]                          fw_valid_i,     // current instruction address valid qualifier
     // forward prediction interface signals
-    // TB_GEN_DEF INTERFACE pred DIR O CTRL VALID
+    // TB_GEN_DEF INTERFACE pred DIR O CTRL VALID CMP 2
     output  logic [P_NUM_PRED-1:0][31:1]                    pred_pc_o,      // forward input pc delay matched, used for update
     output  logic [P_NUM_PRED-1:0][31:0]                    pred_result_o,  // prediction result
     output  logic [P_NUM_PRED-1:0][P_CONF_WIDTH:0]          pred_conf_o,    // prediction result's confidence, 1 if saturated, 0 else
@@ -73,16 +73,12 @@ module baseline_top #(
 );
 
     // declare signals and logic here
-    // logic [P_STORAGE_SIZE-1:0][31:0]                        value_table; // memory for last values
-    // logic [P_STORAGE_SIZE-1:0][P_CONF_WIDTH-1:0]            confidence_table;
-    
     logic [P_NUM_PRED-1:0]                                  fb_wen;
     logic [P_NUM_PRED-1:0]                                  fb_conf_sat;
     logic [P_NUM_PRED-1:0]                                  fb_conf_incr;
     logic                                                   fb_conf_add2;
     logic [P_NUM_PRED-1:0]                                  fb_conf_reset;
     
-    // logic [P_NUM_PRED-1:0][P_CONF_WIDTH:0]                fb_old_conf;
     logic [P_NUM_PRED-1:0][P_CONF_WIDTH:0]                fb_new_conf;
     
 
@@ -196,8 +192,6 @@ module baseline_top #(
         for(genvar p = 0; p < P_NUM_PRED; p = p + 1) begin
             // check fb_conf saturation
             assign fb_conf_sat[p] = fb_conf_i[p][P_CONF_WIDTH];
-            // take MSB for pred_conf_o
-            // assign pred_conf_o[p] = fb_old_conf[p][P_CONF_WIDTH];
             // generate new confidence
             assign fb_new_conf[p] = fb_conf_incr[p]  ? fb_conf_i[p] + 1'b1 : 
                                     fb_conf_add2     ? fb_conf_i[p] + (P_CONF_WIDTH+1)'(2) : 

@@ -7,6 +7,8 @@
 sig_in=$(grep -v "^ *//" "$1"/"$2".sv | grep input.*_i | grep -o [_a-z]*_i)
 # parse output signals
 sig_out=$(grep -v "^ *//" "$1"/"$2".sv | grep output.*_o | grep -o [_a-z]*_o)
+# parse output signals widths
+width_out=$(grep -v "^ *//" "$1"/"$2".sv | grep output.*_o | grep -o \[.*\])
 # parse parameters, not needed now
 params=$(grep -v "^ *//" "$1"/"$2".sv | grep parameter.*P_.*= | grep -o P[_0-9A-Z]*)
 # parse input interfaces
@@ -75,45 +77,51 @@ for i in "${!inf_out[@]}"; do
     ctrl="${ctrl_out[i]}"
     # only handles CTRL NONE or VALID!
     sigs=$(grep -v "^ *//" "$1"/"$2".sv | grep output.*_o | grep -o "$inf".*_o)
-    
+    # parse output compare controls
+    # cmp=$(grep "TB_GEN_DEF INTERFACE .* DIR O" "$1"/"$2".sv | sed -i 's/$3/$4/g' "$1"/"$2".sv | grep -o "CMP [0-9]*" | cut -d ' ' -f 2 )
+    cmp=$(grep "TB_GEN_DEF INTERFACE .* DIR O" "$1"/"$2".sv | grep -o -e "CMP [0-9]*" -e "CMP [a-zA-Z][_0-9a-zA-Z]*" | cut -d ' ' -f 2 )
+    echo $cmp
+    #TODO: finish up sub interface!
     printf "\
     
         void compare_"$inf"() {
+            for(int sub_inf = 0; sub_inf < $cmp; sub_inf++) {
     " >> "$3"/"$2"_tb.h
     
     if [ $ctrl = "VALID" ]
     then
         printf "\
-        
-            if(device->"$inf"_valid_o != cmodel->"$inf"_valid_o) {
-                %s
-                exit(1);
-            }
             
-            if(cmodel->"$inf"_valid_o == 1) {
-        " "printf(\"ERROR: "$inf"_valid_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n\", cmodel->"$inf"_valid_o, device->"$inf"_valid_o);" >> "$3"/"$2"_tb.h
+                if(device->"$inf"_valid_o != cmodel->"$inf"_valid_o) {
+                    %s
+                    exit(1);
+                }
+                
+                if(cmodel->"$inf"_valid_o == 1) {
+            " "printf(\"ERROR: "$inf"_valid_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n\", cmodel->"$inf"_valid_o, device->"$inf"_valid_o);" >> "$3"/"$2"_tb.h
     fi
     
     for sig in $sigs; do
         printf "\
-        
-            if(device->"$sig" != cmodel->"$sig") {
-                %s
-                exit(1);
-            }
-        " "printf(\"ERROR: "$sig" mismatch, CMODEL 0x%lX, RTL 0x%lX\n\", cmodel->"$sig", device->"$sig");" >> "$3"/"$2"_tb.h
+            
+                if(device->"$sig" != cmodel->"$sig") {
+                    %s
+                    exit(1);
+                }
+            " "printf(\"ERROR: "$sig" mismatch, CMODEL 0x%lX, RTL 0x%lX\n\", cmodel->"$sig", device->"$sig");" >> "$3"/"$2"_tb.h
     done
     
     if [ $ctrl = "VALID" ]
     then
         printf "\
-        
-            }
+            
+                }
         " >> "$3"/"$2"_tb.h
     fi
     
     printf "\
-    
+        
+            }
         }
     " >> "$3"/"$2"_tb.h
     
