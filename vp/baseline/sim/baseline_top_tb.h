@@ -35,27 +35,41 @@ class Baseline_top_tb : public Vwrapper<Vbaseline_top> {
     
         void compare_pred() {
             
+            unsigned pc_device;
+            unsigned result_device;
+            unsigned conf_device;
+            unsigned pc_cmodel;
+            unsigned result_cmodel;
+            unsigned conf_cmodel;
+            
             if(device->pred_valid_o != cmodel->pred_valid_o) {
                 printf("ERROR: pred_valid_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", cmodel->pred_valid_o, device->pred_valid_o);
                 exit(1);
             }
             
             for(int sub_interface = 0; sub_interface < 2; sub_interface++) {
-            
-                if(cmodel->pred_valid_o >> sub_interface == 1) {
+
+                pc_device       = device->pred_pc_o     >> (31 * sub_interface) & ((1 << 31) - 1);
+                result_device   = device->pred_result_o >> (32 * sub_interface) & ((1 << 32) - 1);
+                conf_device     = device->pred_conf_o   >> (9 * sub_interface)  & ((1 << 9) - 1);
+                pc_cmodel       = cmodel->pred_pc_o     >> (31 * sub_interface) & ((1 << 31) - 1);
+                result_cmodel   = cmodel->pred_result_o >> (32 * sub_interface) & ((1 << 32) - 1);
+                conf_cmodel     = cmodel->pred_conf_o   >> (9 * sub_interface)  & ((1 << 9) - 1);
+                
+                if(cmodel->pred_valid_o >> sub_interface & 1 == 1) {
                     
-                    if(device->pred_pc_o >> (31 * sub_interface) & (1 << 31 - 1) != cmodel->pred_pc_o >> (31 * sub_interface) & (1 << 31 - 1)) {
-                        printf("ERROR: pred_pc_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", cmodel->pred_pc_o, device->pred_pc_o);
+                    if(pc_device != pc_cmodel) {
+                        printf("ERROR: pred_pc_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", pc_cmodel, pc_device);
                         exit(1);
                     }
                         
-                    if(device->pred_result_o >> (32 * sub_interface) & (1 << 32 - 1) != cmodel->pred_result_o >> (32 * sub_interface) & (1 << 32 - 1)) {
-                        printf("ERROR: pred_result_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", cmodel->pred_result_o, device->pred_result_o);
+                    if(conf_device != conf_cmodel) {
+                        printf("ERROR: pred_conf_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", conf_cmodel, conf_device);
                         exit(1);
                     }
                         
-                    if(device->pred_conf_o >> (8 * sub_interface) & (1 << 8 - 1) != cmodel->pred_conf_o >> (8 * sub_interface) & (1 << 8 - 1)) {
-                        printf("ERROR: pred_conf_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", cmodel->pred_conf_o, device->pred_conf_o);
+                    if(conf_cmodel >> 8 & 1 &&  result_device != result_cmodel) {
+                        printf("ERROR: pred_result_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", result_cmodel, result_device);
                         exit(1);
                     }
                         

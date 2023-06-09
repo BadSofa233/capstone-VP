@@ -129,7 +129,7 @@ int confidence_test(Baseline_top_tb & dut, int pc, int cycles) {
     }
     // correct feedback, no misp, still randomized pred and fb_valid
     rand_result = rand();
-    while(dut.read_pred_conf_o(false) == 0) { // test confidence build up
+    while(dut.read_pred_conf_o(false) >> 8 == 0) { // test confidence build up
         rand_pred = rand() & 1;
         pc_in = rand_pred ? (uint64_t)pc << 31 : pc; // left shift PC if it's pred 1
         dut.write_fw_pc_i(pc_in);

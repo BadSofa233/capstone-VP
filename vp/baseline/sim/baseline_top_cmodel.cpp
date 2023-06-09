@@ -38,8 +38,8 @@ void Baseline_top_cmodel::tick() {
 void Baseline_top_cmodel::generate_prediction() {
     if(P_NUM_PRED == 2) {
         // value table lookup, note that there is a 1 cycle RAM read delay
-        unsigned fw_pc_0 = (unsigned)fw_pc_i; // read lower 32 bits of fw_pc_i
-        unsigned fw_pc_1 = fw_pc_i >> 32; // read higher 32 bits or fw_pc_i
+        unsigned fw_pc_0 = fw_pc_i & ((1 << 31) - 1); // read lower 31 bits of fw_pc_i
+        unsigned fw_pc_1 = fw_pc_i >> 31; // read higher 31 bits or fw_pc_i
         uint64_t pred_value_0 = last_value_storage[fw_pc_0 % P_STORAGE_SIZE];
         uint64_t pred_value_1 = last_value_storage[fw_pc_1 % P_STORAGE_SIZE];
         
@@ -57,7 +57,7 @@ void Baseline_top_cmodel::generate_prediction() {
         
         // compute pred_conf_o
         if(clk_i) {
-            pred_conf_o = (pred_conf_sat_1 << 1) | pred_conf_sat_0;
+            pred_conf_o = (pred_conf_1 << (P_CONF_WIDTH+1)) | pred_conf_0;
             // printf("CMODEL: pred_conf_0 0x%lX, pred_conf_1 0x%lX\n", pred_conf_0, pred_conf_1);
         }
         
@@ -89,7 +89,8 @@ void Baseline_top_cmodel::generate_prediction() {
         
         // compute pred_conf_o
         if(clk_i) {
-            pred_conf_o = pred_conf_sat;
+            // pred_conf_o = pred_conf_sat;
+            pred_conf_o = pred_conf;
         }
         
         // compute pred_pc_o
@@ -132,16 +133,16 @@ void Baseline_top_cmodel::update_storage() {
     }
     else { // dual prediction
         // detect conflicts (when fb_pc_i LSB 32 and fb_pc_i MSB 32 are the same)
-        unsigned fb_pc_0            = (unsigned)fb_pc_i; // read lower 32 bits of fb_pc_i
-        unsigned fb_pc_1            = fb_pc_i >> 32; // read higher 32 bits or fb_pc_i
+        unsigned fb_pc_0            = fb_pc_i & ((1 << 31) - 1); // read lower 32 bits of fb_pc_i
+        unsigned fb_pc_1            = fb_pc_i >> 31; // read higher 32 bits or fb_pc_i
         unsigned fb_actual_0        = (unsigned)fb_actual_i;
         unsigned fb_actual_1        = fb_actual_i >> 32;
         unsigned fb_conf_0          = fb_conf_i & ((2 << P_CONF_WIDTH) - 1);
         unsigned fb_conf_1          = fb_conf_i >> (P_CONF_WIDTH + 1);
         unsigned fb_conf_sat_0      = fb_conf_0 >> P_CONF_WIDTH;
         unsigned fb_conf_sat_1      = fb_conf_1 >> P_CONF_WIDTH;
-        unsigned fb_mispredict_0    = (unsigned)fb_mispredict_i; // read lower 32 bits of fb_mispredict_i
-        unsigned fb_mispredict_1    = fb_mispredict_i >> 32; // read higher 32 bits or fb_mispredict_i
+        unsigned fb_mispredict_0    = fb_mispredict_i & 1; // read lower bit of fb_mispredict_i
+        unsigned fb_mispredict_1    = fb_mispredict_i >> 1 & 1; // read higher bit or fb_mispredict_i
         unsigned fb_valid_0         = fb_valid_i & 1;
         unsigned fb_valid_1         = (fb_valid_i >> 1) & 1;
         unsigned fb_new_conf_0;
@@ -151,10 +152,10 @@ void Baseline_top_cmodel::update_storage() {
         
         // what happens when conflict?
         if(conflict) {
-            bool both_correct = (fb_mispredict_i & 0b11) == 0; // check if fb_mispredict_i is 0
+            bool both_correct = !fb_mispredict_0 && !fb_mispredict_1; // check if fb_mispredict_i is 0
             if(both_correct) {
                 // add 2 to confidence table, store one fb_actual_i
-                fb_new_conf_0 = fb_conf_sat_0 ? fb_conf_0 + 2 : fb_conf_0; 
+                fb_new_conf_0 = fb_conf_sat_0 ? fb_conf_0 : fb_conf_0 + 2; 
                 
                 if(clk_i) {
                     conf_storage[fb_pc_1 % P_STORAGE_SIZE] = fb_new_conf_0; 
@@ -174,7 +175,7 @@ void Baseline_top_cmodel::update_storage() {
                 if(fb_valid_0) {
                     last_value_storage[fb_pc_0 % P_STORAGE_SIZE] = fb_actual_0; 
                     fb_new_conf_0 = fb_mispredict_0 ? 0 : 
-                                    fb_conf_sat_0   ? fb_conf_0 + 1 : fb_conf_0; 
+                                    fb_conf_sat_0   ? fb_conf_0 : fb_conf_0 + 1; 
                     conf_storage[fb_pc_0 % P_STORAGE_SIZE] = fb_new_conf_0;
                 }
             }
@@ -183,10 +184,11 @@ void Baseline_top_cmodel::update_storage() {
                 if(fb_valid_1) {
                     last_value_storage[fb_pc_1 % P_STORAGE_SIZE] = fb_actual_1; 
                     fb_new_conf_1 = fb_mispredict_1 ? 0 : 
-                                    fb_conf_sat_1   ? fb_conf_1 + 1 : fb_conf_1;
+                                    fb_conf_sat_1   ? fb_conf_1 : fb_conf_1 + 1;
                     conf_storage[fb_pc_1 % P_STORAGE_SIZE] = fb_new_conf_1;
                 }
             }
-        }        
+        }
+        
     }
 }
