@@ -302,6 +302,12 @@ int conflict_test(Baseline_top_tb & dut, int pc, int cycles, int P_CONF_WIDTH) {
         exit(1);
     }
     
+    dut.final();
+    
+    printf("INFO: confidence test passed.\n");
+    
+    return 0;
+    
 }
 
 int random_test(Baseline_top_tb & dut, int cycles) {

@@ -15,7 +15,7 @@ private:
     int P_STORAGE_SIZE;
     
     // -------- internal signals -------- //
-    int * last_value_storage;
+    unsigned int * last_value_storage;
     uint64_t * conf_storage;
 
 public:

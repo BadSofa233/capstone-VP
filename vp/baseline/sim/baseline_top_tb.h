@@ -41,6 +41,7 @@ class Baseline_top_tb : public Vwrapper<Vbaseline_top> {
             unsigned pc_cmodel;
             unsigned result_cmodel;
             unsigned conf_cmodel;
+            unsigned conf_sat;
             
             if(device->pred_valid_o != cmodel->pred_valid_o) {
                 printf("ERROR: pred_valid_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", cmodel->pred_valid_o, device->pred_valid_o);
@@ -55,6 +56,7 @@ class Baseline_top_tb : public Vwrapper<Vbaseline_top> {
                 pc_cmodel       = cmodel->pred_pc_o     >> (31 * sub_interface) & ((1 << 31) - 1);
                 result_cmodel   = cmodel->pred_result_o >> (32 * sub_interface) & ((1 << 32) - 1);
                 conf_cmodel     = cmodel->pred_conf_o   >> (9 * sub_interface)  & ((1 << 9) - 1);
+                conf_sat        = conf_cmodel           >> (8 * sub_interface) & 1;
                 
                 if(cmodel->pred_valid_o >> sub_interface & 1 == 1) {
                     
@@ -68,8 +70,8 @@ class Baseline_top_tb : public Vwrapper<Vbaseline_top> {
                         exit(1);
                     }
                         
-                    if(conf_cmodel >> 8 & 1 &&  result_device != result_cmodel) {
-                        printf("ERROR: pred_result_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", result_cmodel, result_device);
+                    if(conf_sat &&  result_device != result_cmodel) {
+                        printf("ERROR: pred %d pred_result_o mismatch, CMODEL 0x%lX, RTL 0x%lX\n", sub_interface, result_cmodel, result_device);
                         exit(1);
                     }
                         

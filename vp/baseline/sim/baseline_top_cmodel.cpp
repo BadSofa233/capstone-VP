@@ -12,7 +12,7 @@ Baseline_top_cmodel::Baseline_top_cmodel(int num_pred, int conf_width, int stora
     P_STORAGE_SIZE = storage_size;
     
     // assign storage space for value table
-    last_value_storage = new int[P_STORAGE_SIZE];
+    last_value_storage = new unsigned int[P_STORAGE_SIZE];
     conf_storage = new uint64_t[P_STORAGE_SIZE];
 }
 
@@ -58,13 +58,11 @@ void Baseline_top_cmodel::generate_prediction() {
         // compute pred_conf_o
         if(clk_i) {
             pred_conf_o = (pred_conf_1 << (P_CONF_WIDTH+1)) | pred_conf_0;
-            // printf("CMODEL: pred_conf_0 0x%lX, pred_conf_1 0x%lX\n", pred_conf_0, pred_conf_1);
         }
         
         // compute pred_pc_o
         if(clk_i) {
             pred_pc_o = fw_pc_i;
-            // printf("CMODEL: pc 0x%lX\n", fw_pc_i);
         }
         
         // compute pred_valid_o
@@ -133,8 +131,8 @@ void Baseline_top_cmodel::update_storage() {
     }
     else { // dual prediction
         // detect conflicts (when fb_pc_i LSB 32 and fb_pc_i MSB 32 are the same)
-        unsigned fb_pc_0            = fb_pc_i & ((1 << 31) - 1); // read lower 32 bits of fb_pc_i
-        unsigned fb_pc_1            = fb_pc_i >> 31; // read higher 32 bits or fb_pc_i
+        unsigned fb_pc_0            = fb_pc_i & ((1 << 31) - 1); // read lower 31 bits of fb_pc_i
+        unsigned fb_pc_1            = fb_pc_i >> 31; // read higher 31 bits or fb_pc_i
         unsigned fb_actual_0        = (unsigned)fb_actual_i;
         unsigned fb_actual_1        = fb_actual_i >> 32;
         unsigned fb_conf_0          = fb_conf_i & ((2 << P_CONF_WIDTH) - 1);
