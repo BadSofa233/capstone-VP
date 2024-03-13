@@ -1,5 +1,5 @@
 Useful links:
-  capstone onedrive: https://uwoca-my.sharepoint.com/:f:/g/personal/yli2993_uwo_ca/ErjGdyD49idAh_QiSiVKC8kByHSl_ZOW3dAq10bCCNAP8g?e=7IN6wy
+  capstone onedrive: https://1drv.ms/f/s!Ag_1VTpTS3hRgscDDk8knDWuOEB3ug
   group progress notebook: https://uwoca-my.sharepoint.com/:o:/g/personal/yli2993_uwo_ca/EgBAexNXCM5EgikvTF77ItkBibyvEgRVQUDwqKwbkoeJ0w?e=uAfi0N
   list of RISC-V implementations: https://github.com/riscvarchive/riscv-cores-list
   an RVfpga webinar: https://event.on24.com/wcc/r/3606359/8C64559CCB740EBD2485729CD7151AE8?mode=login&email=leonlee1999@outlook.com
